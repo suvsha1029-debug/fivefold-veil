@@ -68,7 +68,8 @@ export function createPuzzle(seed) {
 
 export function parseCommand(text) {
   if (typeof text!=='string' || text.length>120) return null;
-  const input=text.trim().toLowerCase().replace(/\s+/g,' ');
+  const symbols={'🔴':'red','🔵':'blue','🟡':'amber','⚪':'circle','🔺':'triangle','⬜':'square','1⃣':'1','2⃣':'2','3⃣':'3'};
+  const input=text.replace(/\uFE0F/g,'').replace(/🔴|🔵|🟡|⚪|🔺|⬜|[123]\u20E3/g,s=>symbols[s]).trim().toLowerCase().replace(/\s+/g,' ');
   const eye='(crown|dusk|heart|dawn|root)';
   let match=new RegExp(`^!focus ${eye}$`).exec(input);
   if (match) return {type:'focus',eyeId:match[1]};
@@ -76,6 +77,8 @@ export function parseCommand(text) {
   if (match) return {type:'test',eyeId:match[1]||null,signal:{color:match[2],shape:match[3],pulses:Number(match[4])}};
   match=new RegExp(`^!solve (?:${eye} )?([a-d])$`).exec(input);
   if (match) return {type:'vote',eyeId:match[1]||null,optionId:match[2]};
+  match=new RegExp(`^!cite ${eye} ([1-9]|[12][0-9]|30) ([a-d])$`).exec(input);
+  if(match)return {type:'cite',eyeId:match[1],sequence:Number(match[2]),optionId:match[3]};
   match=/^!bind (red|blue|amber) (circle|triangle|square) ([123])$/.exec(input);
   if (match) return {type:'bindingVote',signal:{color:match[1],shape:match[2],pulses:Number(match[3])}};
   return null;
@@ -95,11 +98,12 @@ export class VeilGame {
     this.status='idle'; this.deadline=null; this.strikes=0; this.maxStrikes=3; this.sequence=0;
     this.endReason=null; this.finalSignal=null; this.bindingVotes=new Map(); this.bindingHistory=[];
     this.focus=new Map(); this.cooldowns=new Map(); this.testWindows=new Map(); this.participants=new Map();
-    this.eyes=createPuzzle(seed).map(eye=>({...eye,experiments:[],votes:new Map(),wrong:new Set(),sealed:false}));
+    this.eyes=createPuzzle(seed).map(eye=>({...eye,experiments:[],citations:new Map(),votes:new Map(),wrong:new Set(),sealed:false}));
     this.maxPerEye=6;
   }
   get phase(){return this.eyes.every(e=>e.sealed)?'binding':'investigation';}
   eye(id){return this.eyes.find(e=>e.id===id);}
+  eligible(eye,id){return eye.citations.has(id)||eye.experiments.some(e=>e.by===id);}
   compatible(eye){return eye.options.filter(o=>!eye.wrong.has(o.id) && eye.experiments.every(e=>o.rule.accepts(e)===e.accepted));}
   start(now=Date.now()){if(this.status!=='idle')return false;this.status='running';this.deadline=now+this.remainingMs;return true;}
   tick(now=Date.now()){if(this.status!=='running')return;this.remainingMs=Math.max(0,this.deadline-now);if(!this.remainingMs){this.status='lost';this.endReason='The veil closed before the community could bind it.';}}
@@ -109,7 +113,7 @@ export class VeilGame {
     const command=parseCommand(text);if(!command)return {kind:'ignored'};
     this.tick(now);if(this.status!=='running')return problem(this.status==='paused'?'The encounter is paused.':'Start an encounter before sending commands.');
     if(!actor || typeof actor.id!=='string' || !actor.id || actor.id.length>100)return problem('A valid contributor identity is required.');
-    const name=String(actor.name||'Explorer').slice(0,32), source=actor.source==='twitch'?'twitch':'practice';
+    const name=String(actor.name||'Explorer').slice(0,32), source=['twitch','browser'].includes(actor.source)?actor.source:'practice';
     if(command.type==='focus'){this.focus.set(actor.id,command.eyeId);return {kind:'focus',eyeId:command.eyeId,name,message:`Now investigating ${this.eye(command.eyeId).name}.`};}
     if(now-(this.cooldowns.get(actor.id)??-Infinity)<1800)return problem('Wait two seconds between contributions.');
     if(command.type==='bindingVote'){
@@ -120,9 +124,15 @@ export class VeilGame {
     }
     const eye=this.eye(command.eyeId||this.focus.get(actor.id)||actor.eyeId||'heart');
     if(!eye)return problem('Choose a valid eye.');
+    if(command.type==='cite'){
+      const observation=eye.experiments.find(e=>e.sequence===command.sequence),option=eye.options.find(o=>o.id===command.optionId);
+      if(!observation||!option||option.rule.accepts(observation)===observation.accepted)return problem('That observation does not contradict that theory. Compare its prediction with the recorded result.');
+      eye.citations.set(actor.id,{sequence:command.sequence,optionId:command.optionId,name,source});this.participants.set(actor.id,name);this.cooldowns.set(actor.id,now);
+      return {kind:'cite',eyeId:eye.id,name,source,message:'Evidence linked. You have earned a vote at this eye.',command:`!cite ${eye.id} ${command.sequence} ${command.optionId}`};
+    }
     if(eye.sealed)return problem(`${eye.name} is already sealed. Investigate another eye.`);
     if(command.type==='vote'){
-      if(!eye.experiments.some(e=>e.by===actor.id))return problem(`Test a signal at ${eye.name} before voting there. Evidence earns a voice.`);
+      if(!this.eligible(eye,actor.id))return problem(`Test a signal at ${eye.name}, or cite an observation that disproves a theory, before voting there.`);
       if(!this.compatible(eye).some(o=>o.id===command.optionId))return problem('That theory is contradicted by the evidence.');
       eye.votes.set(actor.id,{optionId:command.optionId,name});this.cooldowns.set(actor.id,now);
       return {kind:'vote',eyeId:eye.id,optionId:command.optionId,name,source,command:`!solve ${eye.id} ${command.optionId}`};
@@ -175,7 +185,7 @@ export class VeilGame {
   }
   serialize(now=Date.now()) {
     this.tick(now);
-    return {version:2,seed:this.seed,durationMs:this.durationMs,remainingMs:this.remainingMs,status:this.status,strikes:this.strikes,eyes:this.eyes.map(e=>({id:e.id,experiments:e.experiments.map(x=>({...x})),votes:[...e.votes],wrong:[...e.wrong],sealed:e.sealed})),bindingVotes:[...this.bindingVotes],bindingHistory:this.bindingHistory,finalSignal:this.finalSignal};
+    return {version:2,seed:this.seed,durationMs:this.durationMs,remainingMs:this.remainingMs,status:this.status,strikes:this.strikes,eyes:this.eyes.map(e=>({id:e.id,experiments:e.experiments.map(x=>({...x})),citations:[...e.citations],votes:[...e.votes],wrong:[...e.wrong],sealed:e.sealed})),bindingVotes:[...this.bindingVotes],bindingHistory:this.bindingHistory,finalSignal:this.finalSignal};
   }
   static restore(saved) {
     if(!saved || saved.version!==2 || !Array.isArray(saved.eyes) || saved.eyes.length!==5)throw new Error('Unrecognized saved encounter.');
@@ -185,11 +195,12 @@ export class VeilGame {
     for(const eye of game.eyes){
       const data=saved.eyes.find(e=>e.id===eye.id);if(!data||!Array.isArray(data.experiments)||data.experiments.length>6||!Array.isArray(data.votes)||data.votes.length>1000||!Array.isArray(data.wrong)||data.wrong.length>3)throw new Error('Invalid eye data.');
       const used=new Set();
-      for(const e of data.experiments){if(!validSignal(e)||e.eyeId!==eye.id||e.key!==signalKey(e)||used.has(e.key)||e.accepted!==eye.rule.accepts(e)||typeof e.by!=='string'||!e.by||e.by.length>100||typeof e.name!=='string'||e.name.length>32||!['practice','twitch'].includes(e.source)||!Number.isInteger(e.sequence)||e.sequence<1||e.sequence>30||sequence.has(e.sequence)||!Number.isFinite(e.timeLeftMs)||e.timeLeftMs<0||e.timeLeftMs>game.durationMs)throw new Error('Invalid observation.');used.add(e.key);sequence.add(e.sequence);eye.experiments.push({...e});game.participants.set(e.by,e.name);}
+      for(const e of data.experiments){if(!validSignal(e)||e.eyeId!==eye.id||e.key!==signalKey(e)||used.has(e.key)||e.accepted!==eye.rule.accepts(e)||typeof e.by!=='string'||!e.by||e.by.length>100||typeof e.name!=='string'||e.name.length>32||!['practice','twitch','browser'].includes(e.source)||!Number.isInteger(e.sequence)||e.sequence<1||e.sequence>30||sequence.has(e.sequence)||!Number.isFinite(e.timeLeftMs)||e.timeLeftMs<0||e.timeLeftMs>game.durationMs)throw new Error('Invalid observation.');used.add(e.key);sequence.add(e.sequence);eye.experiments.push({...e});game.participants.set(e.by,e.name);}
       for(const id of data.wrong){const option=eye.options.find(o=>o.id===id);if(!option||option.rule.id===eye.rule.id)throw new Error('Invalid rejected theory.');eye.wrong.add(id);}
       eye.sealed=data.sealed===true;if(eye.sealed&&!eye.experiments.length)throw new Error('A sealed eye needs evidence.');
+      for(const [id,cite] of data.citations||[]){const observation=eye.experiments.find(e=>e.sequence===cite.sequence),option=eye.options.find(o=>o.id===cite.optionId);if(typeof id!=='string'||!id||id.length>100||!observation||!option||option.rule.accepts(observation)===observation.accepted||typeof cite.name!=='string'||cite.name.length>32||!['practice','twitch','browser'].includes(cite.source))throw new Error('Invalid evidence citation.');eye.citations.set(id,{...cite});game.participants.set(id,cite.name);}
       const possible=new Set(game.compatible(eye).map(o=>o.id));
-      for(const entry of data.votes){if(!Array.isArray(entry)||entry.length!==2)throw new Error('Invalid vote.');const[id,vote]=entry;if(!eye.experiments.some(e=>e.by===id)||!possible.has(vote?.optionId)||typeof vote.name!=='string'||vote.name.length>32)throw new Error('Invalid contributor vote.');eye.votes.set(id,{optionId:vote.optionId,name:vote.name});}
+      for(const entry of data.votes){if(!Array.isArray(entry)||entry.length!==2)throw new Error('Invalid vote.');const[id,vote]=entry;if(!game.eligible(eye,id)||!possible.has(vote?.optionId)||typeof vote.name!=='string'||vote.name.length>32)throw new Error('Invalid contributor vote.');eye.votes.set(id,{optionId:vote.optionId,name:vote.name});}
     }
     if(!Array.isArray(saved.bindingVotes)||saved.bindingVotes.length>1000||!Array.isArray(saved.bindingHistory)||saved.bindingHistory.length>3)throw new Error('Invalid binding data.');
     for(const[id,vote]of saved.bindingVotes){if(!game.participants.has(id)||!validSignal(vote?.signal)||typeof vote.name!=='string'||vote.name.length>32||game.phase!=='binding')throw new Error('Invalid binding vote.');game.bindingVotes.set(id,{name:vote.name,signal:{...vote.signal}});}
@@ -201,3 +212,4 @@ export class VeilGame {
     return game;
   }
 }
+

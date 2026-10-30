@@ -1,5 +1,7 @@
 # Fivefold Veil — visual integration
 
+Version 0.3 adds browser team rooms at `/teams`: a two-card host/join lobby, stable room/team/member identity cards, avatar roster, shared arena/journal, and a nine-key emoji signal deck. Colour, shape and pulse keys have visible text labels, pressed states and arrow-key navigation. Teams can investigate any eye; correct evidence citations let late joiners earn votes. The responsive room layout keeps each signal key touch-sized. The original solo interface remains at the home page.
+
 The user's two original references form a single domain: the forest supplies place and atmosphere; Primordial Shade becomes the five-eye guardian at the centre. A custom navy/ivory/gold interface keeps evidence and decisions readable outside the artwork. System fonts and a custom five-eye SVG mark avoid imported franchise assets.
 
 | Element | Integration |

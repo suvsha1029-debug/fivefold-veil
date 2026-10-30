@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TwitchChat } from '../dist/twitch.js';
+import { TwitchChat } from '../public/twitch.js';
 
 class MockSocket {
   static sockets = [];
@@ -85,3 +85,4 @@ test('subscription failure and revoked permission close the connection', async (
   assert.equal(MockSocket.sockets[0].closed, true);
   g.chat.disconnect(false);
 });
+

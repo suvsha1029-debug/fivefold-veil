@@ -6,3 +6,10 @@ node_modules/
 artifacts/
 outputs/
 *.log
+dist/
+.sites-runtime/
+.wrangler/
+.vinext/
+.next/
+*.tsbuildinfo
+.dev.vars*

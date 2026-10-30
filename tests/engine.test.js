@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { VeilGame, EYES, SIGNALS, createPuzzle, parseCommand, signalKey } from '../dist/engine.js';
+import { VeilGame, EYES, SIGNALS, createPuzzle, parseCommand, signalKey } from '../public/engine.js';
 
 const actor = (id='one') => ({id,name:id,source:'twitch'});
 const command = (eye,s) => `!test ${eye} ${s.color} ${s.shape} ${s.pulses}`;
@@ -106,3 +106,4 @@ test('finished encounter and final binding survive recovery',()=>{
   game.process(`!bind ${s.color} ${s.shape} ${s.pulses}`,actor('root'),now);game.commitBinding(now+1);
   const recovered=VeilGame.restore(game.serialize(now+2));assert.equal(recovered.status,'won');assert.deepEqual(recovered.finalSignal,s);assert.equal(recovered.snapshot().sealedCount,EYES.length);
 });
+

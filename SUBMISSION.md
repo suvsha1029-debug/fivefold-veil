@@ -8,6 +8,14 @@ The particular combination of contributor-earned votes, simultaneous eye investi
 
 ## Implemented
 
+- [x] Server-backed browser rooms with unique room/team/member IDs and 24-hour persistence
+- [x] Viewer avatar/team selection, accessible emoji keyboard, shared cross-browser evidence/votes
+- [x] Late-join evidence citations earn voting rights without using an experiment slot
+- [x] Host-only controls, hashed private credentials, versioned writes and idempotent actions
+- [x] Final binding requires evidence contributions from at least two teams
+
+Team-room views are at `/teams`. The current Site remains owner-private: room invitations do not grant Site access. Browser seats are guest identities, separate from Twitch host-relay identities; they do not prove one human per vote. Do not claim a live Twitch multi-viewer session or OBS broadcast until tested. The room member cap of 200 is not a load-test result.
+
 - [x] Five seeded rule investigations, one unique common signal; every eye is necessary
 - [x] Shared evidence, automatic theory elimination, per-eye filters
 - [x] Contributor eligibility, replaceable votes, ties, host locks, quotas, fractures
