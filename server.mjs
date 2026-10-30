@@ -27,5 +27,5 @@ createServer(async (req, res) => {
     res.writeHead(404, headers).end('Not found');
   }
 }).listen(port, '127.0.0.1', () => {
-  console.log(`Signal Lab ready. Local: http://localhost:${port}/`);
+  console.log(`Fivefold Veil ready. Local: http://localhost:${port}/`);
 });

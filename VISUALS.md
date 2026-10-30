@@ -1,43 +1,24 @@
-# Visual integration direction
+# Fivefold Veil — visual integration
 
-## Interface presentation
+The user's two original references form a single domain: the forest supplies place and atmosphere; Primordial Shade becomes the five-eye guardian at the centre. A custom navy/ivory/gold interface keeps evidence and decisions readable outside the artwork. System fonts and a custom five-eye SVG mark avoid imported franchise assets.
 
-The interface uses navy chrome, ivory theory cards, restrained gold ornament, serif headings, and pill-shaped controls inspired by fantasy game menus. A custom compass mark belongs to Signal Lab. The desktop layout separates signal preparation, the encounter, and theories into three aligned columns; the evidence journal sits below the encounter. Tablet layouts use two columns and phone layouts place the arena first. The existing guardian artwork, shaders, Twitch connection, and game rules are preserved.
+| Element | Integration |
+| --- | --- |
+| Forest image | Bundled unchanged as the arena backdrop; deliberately subdued behind text and controls |
+| Primordial Shade | Original HTML/SVG imported into a sandboxed, transparent iframe; source file unchanged |
+| Five eye tabs | Crown, Dusk, Heart, Dawn, Root; progress and seals have text as well as colour |
+| Guardian pupils | Selected eye emphasized; sealed pupils tinted green using public visual flags |
+| Countdown ring | Engine-derived time, with an exact readable timer below the guardian |
+| WebGL atmosphere | Soft curtains/stars and response ripples; no external rendering framework |
+| Ivory theory panel | Four public candidates per eye, evidence elimination, vote counts and host seal |
+| Final binding | Five revealed discoveries and community signal proposals replace the theory panel |
+| Field journal | Eye-labelled evidence, contributor, result, filtering and export |
 
-The interface was checked at desktop and phone sizes, including signal testing, pause, the guide dialog, and stream view. No external font or rendering dependency was added.
+Aurora Glade and Crimson Rift change presentation only. Accepted/rejected tests trigger restrained green/warm reactions; the final 30 seconds warm the ring. Pausing freezes time and decorative motion. Reduced motion and a still-effects control are supported. Hidden/offscreen animation stops, and WebGL failure retains a static scene. The drawing buffer is capped at 900 × 600 pixels.
 
-The two references become one readable stream experience: a place to investigate, a guardian that responds, and a visible measure of time.
+The iframe bridge only receives pause, focus, and sealed-state flags. It never receives secrets, chat, or Twitch credentials. `tools/import-primordial.mjs` documents all adaptations, including CSP, crop, transparent styling, hidden standalone controls, and bounded turbulence updates.
 
-| Element | Placement | Purpose |
-| --- | --- | --- |
-| Aurora forest | Background of the experiment arena | Gives the puzzle a place and atmosphere while controls and evidence stay readable. |
-| Primordial Shade | Centre of the mystery machine | The domain's guardian. The original user-provided HTML is used, including its pupils, particles, and glow. |
-| Countdown ring | Around the guardian | Shows how much time remains at a glance, with the exact time below the eyes. |
-| Aurora / Crimson selector | Above the arena | Lets the streamer choose calm or ominous presentation. It does not change difficulty. |
-| Shader atmosphere | Between the landscape and controls | Soft curtains of light, stars, and one-shot response ripples. |
-| Evidence and theories | Outside the illustration | Preserve the legibility of decisions and results. |
+Desktop uses preparation/arena/theories columns, tablet two columns, and phone a single column with the arena first. Stream view is intended for OBS Window Capture of the same connected browser window. It does not create a separately synchronized overlay.
 
-## Responses already connected
+The forest source was supplied as a screenshot; it is not a reconstructed 3D environment. The ChatGPT source conversation returned a sign-in shell when inspected earlier. Future scene-source integration would need the actual export.
 
-- Start: the selected timer begins and the domain's status becomes investigating.
-- Accepted signal: green response and a gentle outward ripple.
-- Rejected signal: warm/red response and a gentle outward ripple, without a strobe or camera shake.
-- Last 30 seconds: the ring turns amber and the atmosphere gains a subtle warm tint.
-- Pause: time, guardian animation, and shader motion freeze together.
-- Solve: the environment brightens and the result identifies the hidden rule.
-- Reset: evidence is cleared and timer setup becomes available again.
-
-## Ideas to playtest next
-
-1. **Awakening sequence:** introduce the guardian briefly when a case starts, then return to the readable board. Keep it skippable.
-2. **Domain discoveries:** use distinct puzzle rule sets for later domains after the current game has been playtested. Presently, domains are visual themes only.
-3. **Cooperative unlocking:** let viewers unlock the next domain by solving the current case together, rather than by sending more messages.
-4. **Streamer layout:** keep this arena as the visual centre with a webcam corner and a narrow evidence strip for a clear Twitch demo.
-
-The ChatGPT conversation URL could not be read through the web tool; it returned the sign-in shell. The forest is currently the provided screenshot, not a recreation of an unavailable 3D scene source. A source file for that scene could replace the background later.
-
-## Art and browser integration
-
-The source `C:/Users/LENOVO/Downloads/Primordial-Shade.html` remains unchanged. Its imported copy has a transparent page, cropped SVG view box, hidden standalone controls, a restricted Content Security Policy, and parent-controlled animation. Original SVG turbulence updates are limited to roughly eleven per second. The art's CSS remains isolated inside a sandboxed iframe. Rendering pauses when it is not visible. No external rendering framework is loaded.
-
-The timer uses the game engine's remaining time; shader frame rate cannot slow or extend a case. OBS should capture the same browser window, as in the first version.

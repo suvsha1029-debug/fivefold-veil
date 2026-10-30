@@ -1,9 +1,9 @@
 {
-  "name": "signal-lab",
-  "version": "0.1.0",
+  "name": "fivefold-veil",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "A collaborative Twitch chat mystery: test signals, compare evidence, crack the hidden rule.",
+  "description": "A cooperative Twitch mystery: investigate five eyes and bind their discoveries into one shared signal.",
   "scripts": {
     "start": "node server.mjs",
     "test": "node --test",

@@ -1,92 +1,85 @@
-# Signal Lab
+# Fivefold Veil
 
-A collaborative Twitch mystery built for the Codex × TwitchCon hackathon. Viewers send experiments through Twitch chat, compare the machine's results, and vote for the rule that explains them. The streamer decides when to lock the leading theory.
+**Five discoveries. One shared signal.** A cooperative Twitch mystery built with Codex under the user's creative direction. Viewers investigate five eyes of an original guardian, earn votes by contributing evidence, then combine five discoveries into a final binding signal.
 
-## Run locally
+This is a playable broadcaster-operated prototype. The Twitch adapter has mocked tests; real account authorization, viewer commands, and OBS capture still need a live test. Rehearsal contributors are clearly labelled simulations.
 
-Requires Node.js 22 or newer. There are no runtime dependencies or install step.
+## Run
+
+Node.js 22 or newer; no runtime dependencies or installation step.
 
 ```powershell
 cd D:\twitchcon-signal-lab
 node server.mjs
 ```
 
-Open <http://localhost:4173/>. The development server binds to the local computer only and serves files exclusively from `dist/`.
+Open `http://localhost:4173/`. The server binds to loopback and serves only `dist/`.
 
-## Try the game
+## Play a rehearsal
 
-1. Click **Start practice**.
-2. Choose a colour, shape, and pulse count, then click **Test signal**.
-3. Compare the PASS/FAIL evidence. Contradicted theories are eliminated automatically.
-4. Click a remaining theory to cast your practice vote.
-5. Click **Lock the leading theory** when you are ready.
+1. Choose a case code and a 3-, 5-, 8-, or 12-minute timer; eight minutes is the default.
+2. Click **Start practice** and select an eye: Crown, Dusk, Heart, Dawn, or Root.
+3. Choose a signal's colour, shape, and pulses. **Suggest an informative test** prepares a test that separates remaining public theories; it does not use the secret answer or submit the test.
+4. Send a test. Evidence eliminates contradicted theories. **Add sample researcher** contributes a labelled simulated test. Switch rehearsal identity to try voting as one of those contributors.
+5. After contributing at that eye, select a theory to vote. The host seals the leading theory; ties require agreement. Repeat at the other eyes.
+6. Sealing five eyes unlocks a separate binding phase. Find the one signal satisfying all five revealed rules, propose it, and commit the leading proposal to win.
 
-**Add sample researcher** generates one explicitly labelled simulated experiment. Practice controls and sample researchers never send messages to Twitch. Practice and live case data are reset when switching modes.
+Every generated case has exactly one common signal. Removing any eye's rule leaves multiple possibilities, so all five discoveries matter. The seed is deterministic for this version; case links share the puzzle, not progress or authentication.
 
-Choose a three-, five-, or eight-minute case before starting. Each case allows eighteen unique experiments and ends after two incorrect locks. The circular timer around the guardian follows the engine's countdown and freezes when paused. The reset arrow clears the current case and returns to timer setup. Duplicate tests do not use the experiment budget. One vote per Twitch user; a new vote replaces their old one. Inputs from each user have a 1.8-second cooldown. Ties must be resolved before a theory can be locked. Paused or ended cases do not accept commands.
+Each eye permits six unique experiments. A contributor can send two experiments per eye in a rolling 30-second window, with 1.8 seconds between contributions. Duplicate signals at the same eye use no budget. Each person has one replaceable vote per eye and must have contributed an experiment there. Final binding votes require any experiment contribution. Contradictory evidence removes stale votes. Three wrong seals/bindings, or a timeout, end the encounter. Paused and ended encounters reject commands.
 
-## Visual arenas
+## Twitch setup and live test
 
-Choose **Aurora Glade** or **Crimson Rift** above the mystery machine. These change the atmosphere, not the secret rule or game difficulty. The forest reference and original Primordial Shade HTML artwork were provided by the user. The original artwork is rendered in a sandbox with isolated styling; it receives only an animation pause flag, never Twitch tokens, chat, or answers.
-
-The WebGL atmosphere uses one drawing buffer capped at 900 × 600 pixels and draws at most about 30 times per second. Decorative rendering stops while the tab is hidden, the arena is off-screen, or the case is paused/finished. **Effects: still** freezes the guardian and atmosphere. The OS reduced-motion preference is respected automatically. A static scene remains when WebGL is unavailable. The countdown and game logic run independently from the visual renderer.
-
-## Connect a real Twitch channel
-
-1. Verify your Twitch email and enable two-factor authentication.
-2. Go to <https://dev.twitch.tv/console/apps> and register an application. Use a **Public** client type if the console asks.
-3. Add the exact OAuth Redirect URL shown in **Connect Twitch**. For the local server this is `http://localhost:4173/`. A hosted deployment has a separate redirect URL and must also be added if used.
-4. Paste the app's **Client ID** into Signal Lab. Do not paste or create a client secret for this browser flow.
-5. Authorize using the account that owns the channel you want to demonstrate. This first version listens to the signed-in account's own channel.
-6. After the status reads **TWITCH CHAT**, click **Start live case**.
-7. In your Twitch channel chat, send commands such as:
+1. Verify the Twitch account's email and enable 2FA.
+2. Register an application in the [Twitch Developer Console](https://dev.twitch.tv/console/apps). Use a Public client type if prompted. A browser flow cannot protect a client secret.
+3. Add the exact OAuth Redirect URL shown in **Connect Twitch**. Local and hosted URLs must each be registered if both are used.
+4. Paste the public **Client ID** into the game. Never paste a client secret. Authorize as the broadcaster; this prototype reads the signed-in account's own channel.
+5. When **TWITCH CHAT** is shown, start the encounter. Ask real viewers to test, vote, and bind:
 
 ```text
-!test blue circle 2
+!test crown blue circle 2
+!solve crown a
+!focus root
 !test red triangle 1
-!solve c
+!bind amber square 3
 ```
 
-Supported colours: `red`, `blue`, `amber`. Shapes: `circle`, `triangle`, `square`. Pulse counts: `1`, `2`, `3`. Votes: `!solve a` through `!solve f`. Other chat messages are ignored.
+Eye names: `crown`, `dusk`, `heart`, `dawn`, `root`. Colours: `red`, `blue`, `amber`. Shapes: `circle`, `triangle`, `square`. Pulses: `1`–`3`. Theories: `a`–`d`. Omitting the eye uses that viewer's `!focus`, otherwise Heart. A viewer's focus does not change the host's selected eye. Other chat messages are ignored.
 
-The app uses Twitch's browser implicit OAuth flow and EventSub WebSockets with the single `user:read:chat` scope. It does not send chat messages. Access tokens are validated, removed from the address bar on receipt, and kept only in memory. The public Client ID and temporary OAuth state use session storage. Refreshing or closing the page clears authentication. Hourly token validation, duplicate-delivery filtering, connection handoff, retry backoff, and revocation handling are implemented. A connection interruption pauses the case; explicitly resume after reconnection.
+The app uses implicit OAuth with `user:read:chat` and EventSub WebSockets. Tokens are validated for client, identity, and scope, removed from the URL immediately, and kept only in memory. No chat is sent by the app. The public Client ID and temporary OAuth state use session storage. Refreshing requires reconnecting. The adapter includes duplicate-delivery filtering, hourly token validation, reconnect handoff/backoff, and revocation handling. Connection interruptions pause the encounter; resume explicitly after reconnection.
 
-References:
-- <https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#implicit-grant-flow>
-- <https://dev.twitch.tv/docs/eventsub/handling-websocket-events/>
-- <https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelchatmessage>
+Connecting from rehearsal starts fresh Twitch evidence. Reconnecting the same channel can continue its paused local draft. Changing channel or returning to practice clears the encounter, so simulated contributors are not presented as live viewers.
 
-## Show it on stream
+Official references: [registration](https://dev.twitch.tv/docs/authentication/register-app/), [OAuth](https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#implicit-grant-flow), [WebSocket handling](https://dev.twitch.tv/docs/eventsub/handling-websocket-events/), [chat events](https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelchatmessage).
 
-Keep the connected game open in one browser window. Use **OBS Window Capture** for that window. **Stream view** hides setup and host controls; exit with the visible exit button or Escape to pause, resume, or lock a theory. This version does not synchronize separate browser/OBS instances: use Window Capture rather than opening an independent OBS Browser Source.
+## Recovery, journals, and stream presentation
 
-The app has no external fonts, analytics, game engines, paid services, or API inference requirements. User-provided art is bundled locally; the atmosphere and interface use HTML/CSS/SVG and a small WebGL shader.
+The encounter autosaves to browser local storage every five seconds and after actions. A refresh recovers evidence, votes, selected eye, timer, and scene; active encounters recover paused. It never saves a Twitch token. The draft belongs to this browser/origin and is not a cloud account. A second host window taking control pauses the previous window; use one host window.
 
-## Validation
+**Export journal** downloads a JSON record of visible evidence, contributor display names, discovered rules, proposals, and result. It includes the rehearsal/live source label and no tokens. Scores are local and unverified. Do not use this prototype for a paid or ranked competition: secrets live in the host browser and can be inspected.
+
+Use **OBS Window Capture** on the same browser window. **Stream view** hides host setup/locking controls; exit with Escape or its visible button to operate the encounter. Independent browser/OBS instances do not synchronize. Keyboard shortcuts: `1`–`5` inspect eyes, `?` opens instructions, Escape exits stream view.
+
+## Art and performance
+
+Original user-provided Primordial Shade artwork is adapted into a sandboxed iframe with isolated styles/CSP. Only public motion, focused-eye, and sealed-eye flags cross its bridge; no chat, secret rules, or authentication. The original file is left unchanged. The forest screenshot is bundled unchanged. Read `IP_NOTES.md` for the user's originality attestation, precedents, and accurate submission language.
+
+The custom interface uses navy, ivory, gold, system fonts, and a custom five-eye SVG mark. No HoYoverse characters, logos, proprietary font files, music, or game textures were imported. Aurora Glade/Crimson Rift are visual themes, not separate levels. Sealed pupils gain a green tint; selection and seals also have text indicators.
+
+The atmosphere uses one WebGL buffer capped at 900 × 600 pixels at about 30 draws/second. Effects pause offscreen, in a hidden tab, and while paused/finished. Reduced motion is respected; **Effects: still** freezes decorative motion, and WebGL failure leaves the static scene. Game time is independent of frame rate. The forest is a supplied image, not an interactive 3D scene.
+
+## Validate
 
 ```powershell
 npm.cmd run check
 node --test
 ```
 
-Tests cover command validation, timeouts and pause semantics, identification of all six rules, cooldowns, duplicate experiments, bounded experiment budgets, fair voting, ties, stale votes, win/loss, broadcaster-scoped EventSub subscriptions, message deduplication, token identity/scope validation, reconnect handoff, subscription failures, and revoked access.
-
-**Live validation still required:** Sign in with a real Twitch application/channel, send actual chat commands, and record the working integration. Adapter tests use mocked Twitch responses and do not prove live authorization or Twitch connectivity. OBS capture and streaming performance must also be tested on the target computer.
+The tests cover 200 seeded puzzle invariants, command parsing, timing/pause, experiment budgets/quotas, earned voting, ties, stale votes, independent final binding, win/loss, validated recovery, and Twitch adapter identity/scope/deduplication/reconnect/revocation behavior. Mock tests do not prove live Twitch connectivity. Browser QA covers visible rehearsal play, recovery, mobile layout, and stream view; complete real multi-viewer and OBS testing before recording the final demo.
 
 ## Files
 
-- `dist/index.html`, `dist/style.css`: responsive interface and stream view
-- `dist/engine.js`: game rules, timing, evidence, voting, and outcomes
-- `dist/twitch.js`: OAuth and Twitch EventSub adapter
-- `dist/app.js`: interface and lifecycle
-- `dist/domain.js`, `dist/domain.css`: visual arenas, effects, and circular timer
-- `dist/assets/primordial-shade.html`: adapted user-provided artwork with a motion-control bridge
-- `dist/assets/aurora-forest.png`: unchanged user-provided forest reference
-- `tools/import-primordial.mjs`: imports the original artwork without modifying the source file
-- `server.mjs`: local static server
-- `tests/`: Node built-in test suite
-- `SUBMISSION.md`: submission checklist and proposed video script
+`dist/engine.js` is the deterministic game engine; `app.js` binds the UI; `twitch.js` handles OAuth/EventSub. `style.css`, `product.css`, `domain.css`, and `domain.js` implement the UI/arena. `dist/assets/` contains the supplied art; `tools/import-primordial.mjs` imports the original HTML without editing its source. `tests/` uses Node's built-in runner. `SUBMISSION.md` tracks remaining contest work.
 
-## Scope of this first version
+This version has one local host, no database, no public leaderboard, and no synchronized remote overlay. All game state and scores are browser-local.
 
-One broadcaster-operated case at a time; no database, multi-channel hosting, remote host control, or separate synchronized overlay. The secret is held in the broadcaster's browser; this is a cooperative stream experience, not a server-enforced competition. The current six mystery rules are a starting set to playtest and expand.

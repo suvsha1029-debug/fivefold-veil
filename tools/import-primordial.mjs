@@ -18,6 +18,15 @@ replaceOnce('requestAnimationFrame(watchfulTick);\n      }\n      requestAnimati
       window.addEventListener('message',event=>{
         if(event.source!==parent || event.data?.type!=='signal-lab:scene')return;
         paused=event.data.paused!==false;
+        const eyes=['crown','dusk','heart','dawn','root'];
+        const holders=document.querySelector('#eye-pupils')?.children||[];
+        eyes.forEach((id,index)=>{
+          const holder=holders[index];if(!holder)return;
+          const sealed=event.data.eyes?.[id]===true;
+          holder.style.filter=sealed?'hue-rotate(145deg) saturate(.7) drop-shadow(0 0 8px #70e6bf)':'';
+          holder.style.opacity=event.data.focus===id||sealed?'1':'.55';
+          holder.dataset.sealed=String(sealed);
+        });
         sync();
       });
       document.addEventListener('visibilitychange',()=>{if(document.hidden){paused=true;sync();}});`);

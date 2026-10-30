@@ -1,41 +1,50 @@
-# Signal Lab — submission working notes
+# Fivefold Veil — submission working notes
 
-## Concept
+## Pitch
 
-**One hidden rule. A whole chat of researchers.** Viewers test coloured signals against a mystery machine. Its responses create a shared evidence board. The chat develops a theory, casts one vote per viewer, and asks the streamer to lock its answer.
+**Five discoveries. One shared signal.** Twitch chat becomes a research team investigating five eyes of an original guardian. Viewers spend experiments to earn a vote at each eye. The streamer seals discoveries, then chat combines all five necessary constraints into the single signal that opens the veil.
 
-The design aims to make evidence gathering and collaboration visible on stream. Its originality and audience appeal need streamer/viewer playtesting; neither has been established yet.
+The particular combination of contributor-earned votes, simultaneous eye investigations, necessary constraints, a final binding ritual, and the user's guardian artwork is the project's design contribution. Secret-rule deduction and collaborative Twitch puzzles have precedents. Do not claim the genre or underlying mechanics are unprecedented. See `IP_NOTES.md`.
 
-## Must complete before submission
+## Implemented
 
-- [x] Playable prototype, explicitly labelled practice mode
-- [x] Experiment history and automatic elimination of contradicted theories
-- [x] Per-user voting, host-controlled locks, timer, pause, win/loss
-- [x] Browser OAuth and EventSub chat adapter with mocked integration tests
-- [ ] Register Twitch app and test actual authorization with the broadcaster
-- [ ] Verify real `!test` and `!solve` chat commands during a Twitch stream
-- [ ] Test OBS Window Capture on this PC
-- [ ] Get feedback from at least one streamer/viewer and refine the rules
-- [ ] Put the full source and setup instructions in an accessible GitHub/GitLab/Bitbucket repository
-- [ ] Record a YouTube demo under three minutes showing actual Twitch functionality and Codex development
-- [ ] Add project description and screenshots on Devpost
-- [ ] Obtain the actual Codex session ID from the main build chat; do not substitute a repository or Site ID
-- [ ] Click Submit and confirm the entry status is Submitted before the deadline
+- [x] Five seeded rule investigations, one unique common signal; every eye is necessary
+- [x] Shared evidence, automatic theory elimination, per-eye filters
+- [x] Contributor eligibility, replaceable votes, ties, host locks, quotas, fractures
+- [x] Separate final binding vote and win condition
+- [x] Original user artwork integrated with timer, scenes, focused/sealed-eye feedback
+- [x] Replay codes/links, paused local recovery, JSON field-journal export
+- [x] Responsive interface, still effects, keyboard controls, stream capture view
+- [x] Browser OAuth/EventSub adapter with mocked tests; rehearsal clearly labelled
 
-Deadline listed on Devpost: November 2, 2026, 2:00 PM PST / November 3, 2026, 3:30 AM IST. Verify the event countdown before final submission. Keep the submitted repository, video, and linked materials unchanged until winners are announced, per organizer FAQ.
+## Required next
 
-## Proposed demo, 2 minutes 50 seconds
+- [ ] Complete Twitch email/2FA and app registration; record the app Client ID
+- [ ] Test real broadcaster OAuth and real viewers' `!test`, `!solve`, and `!bind`
+- [ ] Test interruption/reconnect and OBS Window Capture on the user's PC
+- [ ] Playtest with a streamer/viewers and refine clarity/pacing from observed feedback
+- [ ] Record creation dates for pre-existing personal artwork; disclose reuse accurately and ask organizers if eligibility is unclear
+- [ ] Provide accessible GitHub/GitLab/Bitbucket source with assets, run instructions, and rights/provenance notes
+- [ ] Record/upload an under-three-minute YouTube video showing real Twitch functionality and Codex development
+- [ ] Add project description, demo URL, source URL, screenshots, and Codex use details on Devpost
+- [ ] Obtain the actual main Codex session ID; never substitute the Site ID, repository ID, or this checklist
+- [ ] Review the entry and finish Submit; confirm it says Submitted
 
-1. **0:00–0:20:** Explain the audience experience: chat becomes a research team, testing an unknown machine.
-2. **0:20–1:20:** Show actual commands in Twitch chat, corresponding machine outputs, and evidence-driven eliminations. Keep the Twitch connection/source indicator visible.
-3. **1:20–1:50:** Show multiple viewers voting, then the streamer locking the correct theory and the case ending.
-4. **1:50–2:20:** Explain streamer controls and the capture view.
-5. **2:20–2:50:** Show footage of this Codex build: implementing the engine/integration, running tests, and iterating on the interface. Describe the user's creative direction and Codex's implementation assistance.
+Deadline listed by the event: **2 November 2026, 2:00 PM PST / 3 November, 3:30 AM IST**. Recheck the official countdown before submission. Preserve the submitted version and linked materials until winners are announced, per organizer FAQ. An owner-private preview is not a public judge-accessible demo/source link.
 
-Use real Twitch footage for the integration demonstration. Label any practice/simulation footage accurately. Use English or supply an English translation, and use assets/audio you have rights to show.
+## Demo outline — 2 minutes 50 seconds
+
+1. **0:00–0:15:** “Five eyes. Five discoveries. One shared signal.” Show the guardian and explain chat's objective.
+2. **0:15–1:05:** Show real viewers testing different eyes in Twitch, results in the journal, and a test earning voting eligibility. Keep the real chat source indicator visible.
+3. **1:05–1:35:** Show theory votes, the host sealing an eye, and all five discoveries. Use clearly labelled cuts from the same live session.
+4. **1:35–2:05:** Show a real `!bind` proposal, final host commit, and the veil opening. Explain why all five constraints matter.
+5. **2:05–2:25:** Show replay codes, recovery, journal export, and stream view briefly.
+6. **2:25–2:50:** Show actual Codex build footage: engine/Twitch implementation, test results, and visual iteration. Credit the user's artwork/creative direction and describe Codex's assistance honestly.
+
+Use real Twitch footage for integration evidence. Label all rehearsal footage. English or English translations are needed; choose audio/assets you have rights to use. An unlisted YouTube video is acceptable per FAQ; private videos are not viewable by judges. Do not claim mocked tests are live integration proof.
 
 ## Sources
 
-- <https://twitchcon-codex.devpost.com/>
-- <https://twitchcon-codex.devpost.com/rules>
-- <https://twitchcon-codex.devpost.com/resources>
+- [Official event](https://twitchcon-codex.devpost.com/)
+- [Rules](https://twitchcon-codex.devpost.com/rules)
+- [Resources and organizer FAQ](https://twitchcon-codex.devpost.com/resources)

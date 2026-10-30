@@ -52,6 +52,9 @@ export class DomainScene {
     this.lastTick = null;
     this.elapsed = 0;
     this.svgMessage = '';
+    this.eyeStates = {};
+    this.selectedEye = 'heart';
+    this.phase = 'investigation';
     this.onVisibility = () => this.schedule();
     this.onPreference = event => { this.setEnabled(!event.matches); };
     document.addEventListener('visibilitychange', this.onVisibility);
@@ -141,8 +144,18 @@ export class DomainScene {
     this.schedule();
   }
 
+  setProgress(eyes, selectedEye, phase) {
+    this.eyeStates = Object.fromEntries(eyes.map(eye => [eye.id, eye.sealed]));
+    this.selectedEye = selectedEye;
+    this.phase = phase;
+    this.stage.dataset.sealedCount = String(eyes.filter(eye => eye.sealed).length);
+    document.getElementById('oracle-topline').textContent = phase === 'binding' ? 'THE FIVEFOLD BINDING' : `${selectedEye.toUpperCase()} / THE WATCHFUL GUARDIAN`;
+    this.syncEmblem();
+    this.updateNarrative();
+  }
+
   updateNarrative() {
-    const text = this.status === 'won' ? 'The domain opens. You understood its secret.' : this.status === 'lost' ? 'The signal fades. Another mystery is waiting.' : this.status === 'paused' ? 'Time is held. The guardian waits.' : this.status === 'running' ? 'The guardian answers. Listen to the pattern.' : this.theme === 'aurora' ? 'Something in the forest is listening.' : 'Beyond the rift, something is watching.';
+    const text = this.status === 'won' ? 'Five discoveries. One shared signal. The veil opens.' : this.status === 'lost' ? 'The signal fades. Another mystery is waiting.' : this.status === 'paused' ? 'Time is held. The guardian waits.' : this.phase === 'binding' ? 'One signal must satisfy all five discoveries.' : this.status === 'running' ? `The ${this.selectedEye} eye answers. Compare its evidence.` : this.theme === 'aurora' ? 'Something in the forest is listening.' : 'Beyond the rift, something is watching.';
     document.getElementById('domain-narrative').textContent = text;
     document.getElementById('domain-state-label').textContent = this.status === 'won' ? 'DOMAIN DECODED' : this.status === 'lost' ? 'CASE CLOSED' : this.status === 'paused' ? 'TIME SUSPENDED' : this.status === 'running' ? 'CHAT IS INVESTIGATING' : 'AWAITING YOUR FIRST SIGNAL';
     document.getElementById('domain-clock-label').textContent = this.status === 'paused' ? 'PAUSED' : ['won','lost'].includes(this.status) ? 'CASE CLOSED' : 'TIME REMAINING';
@@ -162,9 +175,9 @@ export class DomainScene {
   }
 
   syncEmblem() {
-    // Only a motion flag crosses into the sandbox; it receives no tokens or chat.
+    // Only public visual flags cross into the sandbox; never rules, tokens, or chat.
     const paused = !this.enabled || document.hidden || !this.visible || ['paused','won','lost'].includes(this.status);
-    const message = JSON.stringify({ type: 'signal-lab:scene', paused });
+    const message = JSON.stringify({ type: 'signal-lab:scene', paused, eyes: this.eyeStates, focus: this.selectedEye });
     if (message !== this.svgMessage) {
       this.svgMessage = message;
       this.emblem.contentWindow?.postMessage(JSON.parse(message), '*');
