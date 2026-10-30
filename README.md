@@ -22,6 +22,14 @@ Public room state contains display names, member/team IDs, avatars, evidence, vo
 
 The emoji keyboard uses text labels and pressed states alongside glyphs. Arrow keys change choices within each group; Ctrl/Cmd + Enter sends the selected signal. Room play has no informative-test suggestion button. The solo rehearsal keeps assistance for learning.
 
+## Six team domains
+
+Each team chooses a shared home: **Taiga / Tundra**, **Corrupted Universe**, **Lunar Waters**, **Temple of Fire**, **Frozen Frontier**, or **Dark Sea of Stars**. Open **Explore six domains** to preview the art, atmosphere, guardian tint, panel shapes and keyboard palette. Previews affect only your own browser; **Return to team home** leaves a preview.
+
+Every member has one replaceable domain ballot for their own team. An untied leading count selects the home; ties retain the incumbent. Domain votes require no experiment or earned theory vote. Homes and ballots persist across refreshes and new rounds for the room's lifetime. Changing research teams clears that member's previous domain ballot. Hosts inspect each team's saved home but do not vote as hosts. Team members keep their own home while investigating other eyes. Domains change presentation, not rules or difficulty.
+
+Six compressed WebP environments were generated with the built-in image-generation tool. Exact prompts and source/final paths are recorded in `DOMAIN_ART.md`. The user's original guardian remains a separately credited asset.
+
 ## Local setup
 
 Requires Node.js **22.13 or newer**. The full-stack project uses the supported Sites Vinext/Cloudflare starter and D1. Browser gameplay assets are plain HTML/CSS/JavaScript.
@@ -52,6 +60,7 @@ This serves `public/` on loopback port 4173 and implements the same room API wit
 
 ```text
 !team crown
+!domain corrupted
 !test crown blue circle 2
 !test crown 🔵 ⚪ 2️⃣
 !cite crown 2 b
@@ -61,6 +70,8 @@ This serves `public/` on loopback port 4173 and implements the same room API wit
 ```
 
 `!cite crown 2 b` claims that observation #2 contradicts Theory B at Crown. The engine checks the claim. PASS and FAIL tests both count as useful evidence.
+
+`!domain` votes for the relayed participant's own team home. Domain IDs: `taiga`, `corrupted`, `lunar`, `fire`, `frontier`, `star-sea`. A Twitch command cannot choose another team's home.
 
 Eye names: crown/dusk/heart/dawn/root. Colours: red/blue/amber. Shapes: circle/triangle/square. Pulses: 1–3. Theories: a–d. Emoji alternatives: 🔴/🔵/🟡, ⚪/🔺/⬜, 1️⃣/2️⃣/3️⃣. Unrelated chat is ignored. Without an explicit eye, commands use that Twitch participant's focus, otherwise their team's home eye.
 
@@ -80,7 +91,7 @@ Capture the host browser window in OBS for the arena/controls, or a joined viewe
 
 The home page retains the original local rehearsal: replay codes, paused browser-local recovery, sample contributors, informative test suggestions, journal filtering/export, two visual domains, timer and five-eye final binding. It is separate from server-backed rooms. No simulated researchers are injected into team rooms.
 
-The Primordial Shade HTML/SVG is isolated in a sandboxed iframe with a restricted CSP. It receives public pause/focus/seal flags only. The original source is unchanged; `tools/import-primordial.mjs` records adaptations. The forest image is bundled unchanged. Read `IP_NOTES.md` for asset provenance and mechanic precedents. Custom interface code uses navy/ivory/gold, system fonts, and a five-eye mark; no franchise artwork, logos, music or proprietary font files were imported.
+The Primordial Shade HTML/SVG is isolated in a sandboxed iframe with a restricted CSP. It receives public pause/focus/seal flags and a domain hue only. The original source is unchanged; `tools/import-primordial.mjs` records adaptations. The forest image is bundled unchanged. Read `IP_NOTES.md` for asset provenance and mechanic precedents. Custom interface code uses domain-specific palettes, system fonts, and a five-eye mark; no franchise artwork, logos, music or proprietary font files were imported.
 
 Effects respect reduced motion, pause offscreen/hidden and when the encounter is held/finished, and retain a still fallback. The WebGL buffer is capped at 900 × 600 pixels. Visual frame rate does not control the game clock.
 

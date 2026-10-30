@@ -1,5 +1,7 @@
 import { EmojiKeyboard, signalEmoji } from './emoji-keyboard.js';
 import { DomainScene } from './domain.js';
+import { TeamWorlds } from './team-worlds.js';
+import { getDomain } from './domains.js';
 import { TwitchChat, beginTwitchLogin, consumeTwitchLogin, callbackUrl, savedClientId } from './twitch.js';
 
 const $=id=>document.getElementById(id);
@@ -11,6 +13,7 @@ let session=null,state=null,selectedEye='heart',avatar='🦊',busy=false,polling
 let oauth=null;try{oauth=consumeTwitchLogin();}catch(error){setTimeout(()=>toast(error.message,true),0);}
 const scene=new DomainScene();
 const keyboard=new EmojiKeyboard($('emoji-keyboard'),{onChange:renderKeyboard,onSubmit:()=>sendSignal()});
+const worlds=new TeamWorlds({scene,getState:()=>state,getEye:()=>selectedEye,isBusy:()=>busy,vote:domain=>action('domain',{domain}),toast});
 const requestId=()=>crypto.randomUUID();
 function toast(message,error=false){clearTimeout(toastTimer);$('toast').textContent=message;$('toast').classList.toggle('error',error);$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,6000);}
 function readStore(storage,key){try{return JSON.parse(storage.getItem(key)||'{}');}catch{return {};}}
@@ -35,19 +38,19 @@ async function action(path,body){
   if(!session||busy)return null;busy=true;renderKeyboard();
   try{const response=await api(`/${session.code}/${path}`,{method:'POST',body:{...body,requestId:requestId()}});applyState(response.state);return response.result;}
   catch(error){toast(error.message,true);return null;}
-  finally{busy=false;renderKeyboard();}
+  finally{busy=false;renderKeyboard();worlds.render();}
 }
 async function refresh(){if(!session||polling||busy)return;polling=true;try{applyState(await api(`/${session.code}`));}catch(error){$('room-sync').textContent='Connection interrupted';$('room-banner').textContent=`${error.message} Your seat is kept; reconnecting…`;$('room-banner').hidden=false;}finally{polling=false;}}
 
 for(const emoji of avatars){const button=node('button','avatar-key',emoji);button.type='button';button.setAttribute('aria-label',`Avatar ${emoji}`);button.setAttribute('aria-pressed',String(emoji===avatar));button.addEventListener('click',()=>{avatar=emoji;for(const b of $('avatar-picker').children)b.setAttribute('aria-pressed',String(b===button));});$('avatar-picker').append(button);}
 $('create-form').addEventListener('submit',async event=>{event.preventDefault();const submit=event.submitter;submit.disabled=true;try{const result=await api('',{method:'POST',token:null,body:{title:$('room-title').value,durationMs:Number($('room-duration').value)}});enter({code:result.state.code,token:result.token,role:'host'},result.state);toast('Room created. Invite your teams; your host key stays in this browser.');}catch(error){toast(error.message,true);}finally{submit.disabled=false;}});
 $('join-form').addEventListener('submit',async event=>{event.preventDefault();const submit=event.submitter;submit.disabled=true;const code=$('join-code').value.trim().toUpperCase();try{const remembered=lookup(code,'member');if(remembered){const next=await api(`/${code}`,{token:remembered.token});if(next.me){enter(remembered,next);toast('Your browser seat has rejoined.');return;}}const result=await api(`/${code}/join`,{method:'POST',token:null,body:{name:$('join-name').value,avatar,team:$('join-team').value}});enter({code,token:result.token,role:'member'},result.state);toast('Welcome to the expedition. Your team ID is on your identity card.');}catch(error){toast(error.message,true);}finally{submit.disabled=false;}});
-$('lobby-button').addEventListener('click',()=>{session=null;state=null;scene.setState('paused');$('lobby').hidden=false;$('room-view').hidden=true;$('lobby-button').hidden=true;history.replaceState(null,'',location.pathname);});
+$('lobby-button').addEventListener('click',()=>{session=null;state=null;worlds.teamId=null;worlds.preview=null;worlds.render();scene.setState('paused');$('lobby').hidden=false;$('room-view').hidden=true;$('lobby-button').hidden=true;history.replaceState(null,'',location.pathname);});
 
 function renderTeams(){
-  const signature=state.teams.map(t=>`${t.eyeId}:${t.members}:${t.contributors}:${t.sealed}`).join('|')+selectedEye;
+  const signature=state.teams.map(t=>`${t.eyeId}:${t.members}:${t.contributors}:${t.sealed}:${t.domain}`).join('|')+selectedEye;
   if($('team-list').dataset.signature===signature)return;$('team-list').dataset.signature=signature;
-  $('team-list').replaceChildren(...state.teams.map(team=>{const button=node('button',`team-row${team.sealed?' sealed':''}`);button.type='button';button.setAttribute('aria-pressed',String(team.eyeId===selectedEye));button.setAttribute('aria-label',`Inspect ${team.name} team, ${team.members} members${team.sealed?', sealed':''}`);const copy=node('span','team-text');copy.append(node('strong','',team.name),node('small','',team.id));button.append(node('span','',team.sealed?'✓':team.emoji),copy,node('span','team-size',`${team.members} member${team.members===1?'':'s'}`));button.addEventListener('click',()=>{selectedEye=team.eyeId;render();});return button;}));
+  $('team-list').replaceChildren(...state.teams.map(team=>{const button=node('button',`team-row${team.sealed?' sealed':''}`);button.type='button';button.setAttribute('aria-pressed',String(team.eyeId===selectedEye));button.setAttribute('aria-label',`Inspect ${team.name} team, ${team.members} members${team.sealed?', sealed':''}`);const copy=node('span','team-text');copy.append(node('strong','',team.name),node('small','',team.id),node('small','world-team-label',getDomain(team.domain).name));button.append(node('span','',team.sealed?'✓':team.emoji),copy,node('span','team-size',`${team.members} member${team.members===1?'':'s'}`));button.addEventListener('click',()=>{selectedEye=team.eyeId;render();});return button;}));
 }
 function renderKeyboard(){
   const signal=keyboard.value,binding=state?.game.phase==='binding',me=state?.me,running=state?.game.status==='running',eye=state?.game.eyes.find(e=>e.id===selectedEye);
@@ -100,7 +103,7 @@ function render(){
   $('my-identity').replaceChildren(node('div','',me?`MEMBER / ${me.id}`:'HOST / PRIVATE CONTROL KEY'),node('div','',team?`TEAM / ${team.id}`:`ROOM / ${state.code}`),node('div','',me?(me.source==='browser'?'Browser guest · not Twitch-verified':'Twitch host relay'):'Share the viewer link, never your host key.'));
   $('team-instruction').textContent=me?`Your team: ${team.name}. Help investigate any of the five eyes. ${me.locked?'Your team is fixed for this round.':'You may switch before contributing.'}`:'Teams can help across the constellation. At least two teams must contribute before the final binding.';
   $('switch-team').hidden=!me||me.locked;if(me&&!me.locked&&document.activeElement!==$('switch-team-select'))$('switch-team-select').value=me.team;
-  scene.setTheme(state.theme);scene.setProgress(g.eyes,selectedEye,g.phase);scene.setState(g.status);renderClock();
+  worlds.render();scene.setProgress(g.eyes,selectedEye,g.phase);scene.setState(g.status);renderClock();
   $('room-eye-title').textContent=g.phase==='binding'?'The fivefold binding':`${eye.name} / domain encounter`;$('room-phase').textContent=ended?'ENCOUNTER CLOSED':g.status==='paused'?'TIME HELD':g.phase.toUpperCase();
   const last=eye.experiments.at(-1);$('room-output-symbol').textContent=g.status==='won'?'✧':last?(last.accepted?'✓':'×'):'?';$('room-output-text').textContent=g.status==='won'?'VEIL OPENED':last?(last.accepted?'ACCEPTED':'REJECTED'):'AWAITING SIGNAL';$('machine-stage').dataset.result=g.status==='won'?'pass':last?(last.accepted?'pass':'fail'):'idle';
   renderTeams();renderKeyboard();renderTheories();renderProof();
@@ -112,14 +115,13 @@ function render(){
 }
 
 $('effects-button').addEventListener('click',()=>scene.setEnabled(!scene.enabled));
-for(const button of document.querySelectorAll('.domain-tab'))button.addEventListener('click',()=>{if(state?.isHost)action('control',{type:'theme',theme:button.dataset.domain});else toast('The host chooses the shared domain. Your effects toggle stays personal.');});
 $('guide-button').addEventListener('click',()=>$('room-guide').showModal());
 for(const button of document.querySelectorAll('[data-close]'))button.addEventListener('click',()=>$(button.dataset.close).close());
 $('invite-button').addEventListener('click',()=>{$('invite-url').value=joinUrl(state.code);$('invite-dialog').showModal();});
 $('copy-invite').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('invite-url').value);toast('Viewer link copied. It contains no host credentials.');}catch{$('invite-url').select();toast('Select and copy the viewer link above.');}});
 
 const twitch=new TwitchChat({onMessage:message=>{
-  if(!session||!state?.isHost||!/^!(team|test|solve|cite|bind|focus)\s/i.test(message.text))return;
+  if(!session||!state?.isHost||!/^!(team|domain|test|solve|cite|bind|focus)\s/i.test(message.text))return;
   api(`/${session.code}/twitch`,{method:'POST',body:{text:message.text,userId:message.id,name:message.name,channel:connection.channel,requestId:requestId()}}).then(response=>{applyState(response.state);if(response.result?.kind==='test')scene.pulse(response.result.experiment.accepted);}).catch(error=>toast(error.message,true));
 },onStatus:next=>{
   connection=next;$('room-twitch-status').textContent=next.message||next.state;$('room-twitch-form').hidden=next.state==='connected';$('room-twitch-disconnect').hidden=next.state!=='connected';

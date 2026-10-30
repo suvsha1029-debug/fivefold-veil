@@ -23,7 +23,8 @@ replaceOnce('requestAnimationFrame(watchfulTick);\n      }\n      requestAnimati
         eyes.forEach((id,index)=>{
           const holder=holders[index];if(!holder)return;
           const sealed=event.data.eyes?.[id]===true;
-          holder.style.filter=sealed?'hue-rotate(145deg) saturate(.7) drop-shadow(0 0 8px #70e6bf)':'';
+          const hue=Number.isFinite(event.data.hue)?Math.max(0,Math.min(360,event.data.hue)):0;
+          holder.style.filter=sealed?'hue-rotate('+(145-hue)+'deg) saturate(.7) drop-shadow(0 0 8px #70e6bf)':'';
           holder.style.opacity=event.data.focus===id||sealed?'1':'.55';
           holder.dataset.sealed=String(sealed);
         });

@@ -2,8 +2,9 @@ const VERTEX = `attribute vec2 position; varying vec2 uv;
 void main(){uv=position*.5+.5;gl_Position=vec4(position,0.,1.);}`;
 const FRAGMENT = `precision mediump float;
 varying vec2 uv;
-uniform float time, crimson, urgency, pulse, verdict;
+uniform float time, world, urgency, pulse, verdict;
 uniform vec2 resolution;
+uniform vec3 tintA, tintB;
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+1.),f.x),f.y);}
 float cloud(vec2 p){return noise(p)*.57+noise(p*2.1)*.28+noise(p*4.3)*.15;}
@@ -15,10 +16,37 @@ void main(){
   float rays=pow(noise(vec2(p.x*40.+t,p.y*.6)),2.)*.75+.2;
   float curtain=band*rays*smoothstep(.25,.6,p.y);
   float second=exp(-abs(p.y-(.83+sin(p.x*4.-t*.8)*.08))*15.)*.15;
-  vec3 mint=mix(vec3(.12,.72,.54),vec3(.24,.29,.72),p.x);
-  vec3 red=mix(vec3(.9,.12,.2),vec3(.38,.13,.53),p.x);
-  vec3 tint=mix(mint,red,crimson);
-  vec3 color=tint*(curtain+second);
+  vec3 tint=mix(tintA,tintB,p.x);
+  vec3 color=vec3(0.);
+  if(world<.5){
+    color=tint*(curtain+second);
+    vec2 snow=p*vec2(55.,34.)+vec2(time*.2,time*.38);
+    color+=vec3(.65,.85,.92)*step(.989,hash(floor(snow)))*exp(-length(fract(snow)-.5)*22.)*.48;
+  }else if(world<1.5){
+    float nebula=cloud(p*vec2(3.,2.)+vec2(t,-t*.6));
+    color=tint*pow(nebula,3.)*.42;
+    float fracture=pow(max(0.,sin(p.x*26.+noise(vec2(p.y*12.,t))*7.)),32.);
+    color+=tintA*fracture*.045;
+  }else if(world<2.5){
+    float water=(.5+.5*sin(p.y*95.+sin(p.x*12.+time*.3)*2.-time*.9));
+    float reflection=exp(-abs(p.x-.22)*11.);
+    color=mix(tintA,tintB,water)*water*reflection*.22*(1.-smoothstep(.1,.54,p.y));
+    color+=tintB*curtain*.08;
+  }else if(world<3.5){
+    vec2 embers=p*vec2(38.,23.)-vec2(sin(time*.18)*.3,time*.55);
+    float spark=step(.978,hash(floor(embers)))*exp(-length(fract(embers)-.5)*19.);
+    color=tintA*spark*.8+tintB*cloud(p*3.+vec2(t,-t))*.09;
+    color+=tintA*pow(max(0.,.3-p.y),2.)*.6;
+  }else if(world<4.5){
+    float mist=cloud(vec2(p.x*5.+t,p.y*3.))*pow(max(0.,.8-p.y),2.);
+    color=tint*mist*.18;
+    vec2 dust=p*vec2(58.,32.)+vec2(time*.3,time*.1);
+    color+=tint*step(.989,hash(floor(dust)))*exp(-length(fract(dust)-.5)*23.)*.4;
+  }else{
+    float swell=.5+.5*sin(p.y*80.+sin(p.x*9.+time*.16)*3.-time*.4);
+    color=tint*swell*.07*(1.-smoothstep(.0,.46,p.y));
+    color+=tintB*pow(cloud(p*3.+vec2(t*.4,0.)),4.)*.12;
+  }
   vec2 grid=p*vec2(70.,45.); vec2 cell=floor(grid);vec2 local=fract(grid)-.5;
   float star=step(.982,hash(cell))*exp(-length(local)*25.);
   color+=vec3(.64,.8,.85)*star*(.5+.2*sin(time*.5+hash(cell)*6.));
@@ -43,7 +71,7 @@ export class DomainScene {
     this.enabled = !this.motionQuery.matches;
     this.visible = true;
     this.status = 'idle';
-    this.theme = 'aurora';
+    this.theme = null;
     this.urgency = 0;
     this.pulseAt = -10000;
     this.verdict = 1;
@@ -68,6 +96,7 @@ export class DomainScene {
     this.canvas.addEventListener('webglcontextrestored', () => { this.initialize(); this.schedule(); });
     this.initialize();
     this.setEnabled(this.enabled);
+    this.setTheme('taiga');
   }
 
   initialize() {
@@ -92,7 +121,7 @@ export class DomainScene {
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]), gl.STATIC_DRAW);
       const position = gl.getAttribLocation(program, 'position');
       gl.enableVertexAttribArray(position); gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-      this.uniforms = Object.fromEntries(['time','crimson','urgency','pulse','verdict','resolution'].map(name => [name, gl.getUniformLocation(program, name)]));
+      this.uniforms = Object.fromEntries(['time','world','tintA','tintB','urgency','pulse','verdict','resolution'].map(name => [name, gl.getUniformLocation(program, name)]));
       this.stage.dataset.renderer = 'webgl';
       this.resizeCanvas();
     } catch {
@@ -126,15 +155,22 @@ export class DomainScene {
   }
 
   setTheme(theme) {
-    this.theme = theme === 'crimson' ? 'crimson' : 'aurora';
+    const id=domainId(theme),domain=getDomain(id);
+    if(this.theme===id)return;
+    this.theme=id;
     this.stage.dataset.domain = this.theme;
-    document.getElementById('domain-coordinate').textContent = this.theme === 'aurora' ? 'DOMAIN 01 / AURORA GLADE' : 'DOMAIN 02 / CRIMSON RIFT';
+    this.stage.style.setProperty('--domain-image',`url("${domain.asset}")`);
+    this.stage.style.setProperty('--domain-accent',domain.accent);
+    this.stage.style.setProperty('--guardian-hue',`${domain.hue}deg`);
+    document.body.dataset.world=id;
+    for(const [key,value]of Object.entries({base:domain.base,panel:domain.panel,raised:domain.raised,paper:domain.paper,ink:domain.ink,accent:domain.accent,art:`url("${domain.asset}")`}))document.body.style.setProperty(`--world-${key}`,value);
+    document.getElementById('domain-coordinate').textContent = `DOMAIN 0${domain.mode+1} / ${domain.name.toUpperCase()}`;
     for (const button of document.querySelectorAll('[data-domain].domain-tab')) {
-      const selected = button.dataset.domain === this.theme;
+      const selected = domainId(button.dataset.domain) === this.theme;
       button.classList.toggle('active', selected); button.setAttribute('aria-pressed', String(selected));
     }
     this.updateNarrative();
-    if (!this.enabled) this.draw();
+    this.syncEmblem();this.draw();
   }
 
   setState(status) {
@@ -155,7 +191,7 @@ export class DomainScene {
   }
 
   updateNarrative() {
-    const text = this.status === 'won' ? 'Five discoveries. One shared signal. The veil opens.' : this.status === 'lost' ? 'The signal fades. Another mystery is waiting.' : this.status === 'paused' ? 'Time is held. The guardian waits.' : this.phase === 'binding' ? 'One signal must satisfy all five discoveries.' : this.status === 'running' ? `The ${this.selectedEye} eye answers. Compare its evidence.` : this.theme === 'aurora' ? 'Something in the forest is listening.' : 'Beyond the rift, something is watching.';
+    const text = this.status === 'won' ? 'Five discoveries. One shared signal. The veil opens.' : this.status === 'lost' ? 'The signal fades. Another mystery is waiting.' : this.status === 'paused' ? 'Time is held. The guardian waits.' : this.phase === 'binding' ? 'One signal must satisfy all five discoveries.' : this.status === 'running' ? `The ${this.selectedEye} eye answers. Compare its evidence.` : getDomain(this.theme).narrative;
     document.getElementById('domain-narrative').textContent = text;
     document.getElementById('domain-state-label').textContent = this.status === 'won' ? 'DOMAIN DECODED' : this.status === 'lost' ? 'CASE CLOSED' : this.status === 'paused' ? 'TIME SUSPENDED' : this.status === 'running' ? 'CHAT IS INVESTIGATING' : 'AWAITING YOUR FIRST SIGNAL';
     document.getElementById('domain-clock-label').textContent = this.status === 'paused' ? 'PAUSED' : ['won','lost'].includes(this.status) ? 'CASE CLOSED' : 'TIME REMAINING';
@@ -177,7 +213,7 @@ export class DomainScene {
   syncEmblem() {
     // Only public visual flags cross into the sandbox; never rules, tokens, or chat.
     const paused = !this.enabled || document.hidden || !this.visible || ['paused','won','lost'].includes(this.status);
-    const message = JSON.stringify({ type: 'signal-lab:scene', paused, eyes: this.eyeStates, focus: this.selectedEye });
+    const message = JSON.stringify({ type: 'signal-lab:scene', paused, eyes: this.eyeStates, focus: this.selectedEye, hue:getDomain(this.theme).hue });
     if (message !== this.svgMessage) {
       this.svgMessage = message;
       this.emblem.contentWindow?.postMessage(JSON.parse(message), '*');
@@ -209,7 +245,9 @@ export class DomainScene {
     gl.useProgram(this.program);
     const u = this.uniforms;
     gl.uniform1f(u.time, this.elapsed / 1000);
-    gl.uniform1f(u.crimson, this.theme === 'crimson' ? 1 : 0);
+    const domain=getDomain(this.theme);
+    gl.uniform1f(u.world, domain.mode);
+    gl.uniform3fv(u.tintA,domain.tintA);gl.uniform3fv(u.tintB,domain.tintB);
     gl.uniform1f(u.urgency, this.urgency);
     gl.uniform1f(u.pulse, Math.max(0, Math.min(1, (this.elapsed - this.pulseAt) / 1400)));
     gl.uniform1f(u.verdict, this.verdict);
@@ -226,3 +264,4 @@ export class DomainScene {
     if (this.gl) { this.gl.deleteBuffer(this.buffer); this.gl.deleteProgram(this.program); }
   }
 }
+import { getDomain, domainId } from './domains.js';

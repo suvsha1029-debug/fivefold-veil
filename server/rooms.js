@@ -1,4 +1,5 @@
 import { VeilGame, EYES, parseCommand } from '../public/engine.js';
+import { getDomain, domainId, validDomain, DEFAULT_TEAM_DOMAINS, teamDomainState, settleTeamDomain } from '../public/domains.js';
 
 const TTL=24*60*60*1000;
 const AVATARS=['🦊','🦉','🐸','🐙','🦋','🐼','🐺','🐱'];
@@ -43,12 +44,12 @@ function credential(room,tokenHash){
 }
 function publicState(room,game,auth,now){
   const snapshot=game.snapshot();snapshot.seed=['won','lost'].includes(game.status)?game.seed:`room-${room.round}`;
-  const teams=EYES.map(eye=>{const members=room.members.filter(m=>m.team===eye.id);return {id:`${room.code}-${eye.id.toUpperCase()}`,eyeId:eye.id,name:eye.name,emoji:TEAM_EMOJI[eye.id],members:members.length,contributors:members.filter(m=>game.participants.has(m.id)).length,sealed:game.eye(eye.id).sealed};});
+  const teams=EYES.map(eye=>{const members=room.members.filter(m=>m.team===eye.id);return {id:`${room.code}-${eye.id.toUpperCase()}`,eyeId:eye.id,name:eye.name,emoji:TEAM_EMOJI[eye.id],members:members.length,contributors:members.filter(m=>game.participants.has(m.id)).length,sealed:game.eye(eye.id).sealed,...teamDomainState(room,eye.id)};});
   return {code:room.code,round:room.round,title:room.title,createdAt:room.createdAt,expiresAt:room.expiresAt,serverNow:now,minimumTeams:2,
     source:room.twitchChannel?`Twitch relay @${room.twitchChannel} + browser guests`:'Browser team room',twitchChannel:room.twitchChannel||null,
-    theme:room.theme,teams,activeTeams:teams.filter(t=>t.contributors>0).length,
+    theme:domainId(room.theme),teams,activeTeams:teams.filter(t=>t.contributors>0).length,
     members:room.members.map(m=>({id:m.id,name:m.name,avatar:m.avatar,team:m.team,source:m.source,contributed:game.participants.has(m.id)})),
-    me:auth.member?{id:auth.member.id,name:auth.member.name,avatar:auth.member.avatar,team:auth.member.team,source:auth.member.source,locked:auth.member.lockedRound===room.round,eligible:game.eyes.filter(e=>game.eligible(e,auth.member.id)).map(e=>e.id),votes:Object.fromEntries(game.eyes.map(e=>[e.id,e.votes.get(auth.member.id)?.optionId||null]))}:null,
+    me:auth.member?{id:auth.member.id,name:auth.member.name,avatar:auth.member.avatar,team:auth.member.team,source:auth.member.source,locked:auth.member.lockedRound===room.round,domainVote:room.domainVotes?.[auth.member.id]?.team===auth.member.team?room.domainVotes[auth.member.id].domain:null,eligible:game.eyes.filter(e=>game.eligible(e,auth.member.id)).map(e=>e.id),votes:Object.fromEntries(game.eyes.map(e=>[e.id,e.votes.get(auth.member.id)?.optionId||null]))}:null,
     isHost:auth.host,game:snapshot,activity:room.activity};
 }
 
@@ -113,24 +114,32 @@ export class RoomApi {
             result={kind:'reset',message:'New round. Your room and team IDs stay the same.'};
             room.requests=[{id:requestId,by:actorKey,result}];if(await this.store.save(code,room,row.version))return json({result,state:publicState(room,fresh,auth,now)});continue;
           }
-          else if(type==='theme'){room.theme=body.theme==='crimson'?'crimson':'aurora';result={kind:'theme',message:'The domain atmosphere changed.'};}
+          else if(type==='theme'){room.theme=domainId(body.theme);result={kind:'theme',message:'The host’s legacy atmosphere changed.'};}
           else throw fail('Unknown host control.');
         } else if(action==='team'){
           if(!auth.member)throw fail('Join as a viewer to choose a team.');
           if(auth.member.lockedRound===room.round)throw fail('Your team is fixed after your first contribution until the next round.',409);
           if(!EYES.some(e=>e.id===body.team))throw fail('Choose a valid team.');
-          auth.member.team=body.team;result={kind:'team',message:'Team updated.'};
+          const previousTeam=auth.member.team;auth.member.team=body.team;if(room.domainVotes)delete room.domainVotes[auth.member.id];settleTeamDomain(room,previousTeam);settleTeamDomain(room,body.team);result={kind:'team',message:'Team updated.'};
+        } else if(action==='domain'){
+          if(!auth.member)throw fail('Join a team to vote for its home domain.',403);
+          if(!validDomain(body.domain))throw fail('Choose one of the six available domains.');
+          room.domainVotes||={};room.domainVotes[auth.member.id]={team:auth.member.team,domain:body.domain};
+          const settled=settleTeamDomain(room,auth.member.team);
+          result={kind:'domainVote',message:`Domain vote recorded. ${auth.member.team} stays in ${getDomain(settled.domain).name}.`};addActivity(room,auth.member,result);
         } else if(action==='command'||action==='twitch'){
           let member=auth.member;
           if(action==='twitch'){
             if(!auth.host)throw fail('Only the connected host can relay Twitch commands.',403);
             if(!/^\d{1,20}$/.test(String(body.userId))||!/^\w{1,25}$/.test(String(body.channel||'')))throw fail('Invalid Twitch relay identity.');
             const teamMatch=/^!team (crown|dusk|heart|dawn|root)$/i.exec(String(body.text||'').trim());
-            const parsed=parseCommand(body.text);if(!parsed&&!teamMatch)return json({result:{kind:'ignored'},state:publicState(room,game,auth,now)});
+            const domainMatch=/^!domain (taiga|corrupted|lunar|fire|frontier|star-sea)$/i.exec(String(body.text||'').trim());
+            const parsed=parseCommand(body.text);if(!parsed&&!teamMatch&&!domainMatch)return json({result:{kind:'ignored'},state:publicState(room,game,auth,now)});
             const id=`T-${body.userId}`;member=room.members.find(m=>m.id===id);
             if(!member){if(room.members.length>=200)throw fail('The room is full.',409);member={id,name:cleanName(body.name)||'Twitch viewer',avatar:'🎮',team:teamMatch?.[1].toLowerCase()||parsed?.eyeId||'heart',source:'twitch',lockedRound:0};room.members.push(member);}
             room.twitchChannel=body.channel;
-            if(teamMatch){if(member.lockedRound===room.round)throw fail('Your team is fixed for this round.',409);member.team=teamMatch[1].toLowerCase();result={kind:'team',message:`Joined ${member.team}.`};}
+            if(teamMatch){if(member.lockedRound===room.round)throw fail('Your team is fixed for this round.',409);const previousTeam=member.team;member.team=teamMatch[1].toLowerCase();if(room.domainVotes)delete room.domainVotes[member.id];settleTeamDomain(room,previousTeam);settleTeamDomain(room,member.team);result={kind:'team',message:`Joined ${member.team}.`};}
+            if(domainMatch){const domain=domainMatch[1].toLowerCase();room.domainVotes||={};room.domainVotes[member.id]={team:member.team,domain};const settled=settleTeamDomain(room,member.team);result={kind:'domainVote',message:`Domain vote recorded. ${member.team} stays in ${getDomain(settled.domain).name}.`};}
           }
           if(!result){
             if(!member)throw fail('The host directs the ritual. Join the viewer link to contribute.',403);
@@ -156,7 +165,7 @@ export class RoomApi {
     await this.store.cleanup(now);
     for(let attempt=0;attempt<5;attempt++){
       const code=roomCode(),token=randomHex(24),game=new VeilGame({seed:this.seed(),durationMs});
-      const room={code,title,round:1,hostHash:await hash(token),createdAt:now,expiresAt:now+TTL,theme:'aurora',members:[],activity:[],requests:[],game:game.serialize(now),deadline:null,runtime:{}};
+      const room={code,title,round:1,hostHash:await hash(token),createdAt:now,expiresAt:now+TTL,theme:'taiga',teamDomains:{...DEFAULT_TEAM_DOMAINS},domainVotes:{},members:[],activity:[],requests:[],game:game.serialize(now),deadline:null,runtime:{}};
       if(await this.store.insert(code,room))return json({token,state:publicState(room,game,{host:true,member:null},now)},201);
     }
     throw fail('Could not reserve a room code. Please retry.',503);
