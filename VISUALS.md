@@ -1,5 +1,11 @@
 # Visual integration direction
 
+## Interface presentation
+
+The interface uses navy chrome, ivory theory cards, restrained gold ornament, serif headings, and pill-shaped controls inspired by fantasy game menus. A custom compass mark belongs to Signal Lab. The desktop layout separates signal preparation, the encounter, and theories into three aligned columns; the evidence journal sits below the encounter. Tablet layouts use two columns and phone layouts place the arena first. The existing guardian artwork, shaders, Twitch connection, and game rules are preserved.
+
+The interface was checked at desktop and phone sizes, including signal testing, pause, the guide dialog, and stream view. No external font or rendering dependency was added.
+
 The two references become one readable stream experience: a place to investigate, a guardian that responds, and a visible measure of time.
 
 | Element | Placement | Purpose |

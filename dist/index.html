@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0c1516">
+  <meta name="theme-color" content="#162339">
   <meta name="description" content="One mystery. A whole chat of researchers. Run experiments and crack the hidden rule together in Signal Lab.">
   <meta name="referrer" content="no-referrer">
   <title>Signal Lab — crack it together</title>
@@ -16,17 +16,18 @@
   <a class="skip-link" href="#workbench">Skip to the experiment</a>
   <div class="shell">
     <header class="header">
-      <a class="brand" href="./" aria-label="Signal Lab home"><span class="brand-mark" aria-hidden="true">ϟ</span><span>SIGNAL<span class="brand-light">LAB</span><small>MAKE A LITTLE DISCOVERY.</small></span></a>
+      <a class="brand" href="./" aria-label="Signal Lab home"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><path d="m24 2 5 16 17 6-17 5-5 17-5-17L2 24l17-6Z" fill="currentColor"/><path d="m9 9 15 8 15-8-8 15 8 15-15-8-15 8 8-15Z" stroke="currentColor"/><circle cx="24" cy="24" r="6" fill="#17263a"/><circle cx="24" cy="24" r="2" fill="currentColor"/></svg></span><span>SIGNAL<span class="brand-light">LAB</span><small>THE DOMAIN CHRONICLES</small></span></a>
+      <nav class="section-nav" aria-label="Sections"><a class="current" href="#workbench">Investigation</a><a href="#evidence-panel">Field journal</a></nav>
       <nav aria-label="Lab tools">
         <button class="text-button" id="help-button">How to play <span aria-hidden="true">↗</span></button>
-        <button class="outline-button" id="stream-button" aria-pressed="false">Stream view</button>
+        <button class="outline-button" id="stream-button" aria-label="Stream view" aria-pressed="false">Stream view</button>
         <button class="outline-button connect-button" id="connect-button"><span class="connection-dot"></span><span id="connect-label">Connect Twitch</span></button>
       </nav>
     </header>
 
     <main>
       <section class="intro">
-        <div><p class="eyebrow"><span class="tiny-cross" aria-hidden="true">✳</span> AN EXPERIMENT IN THINKING TOGETHER</p><h1>Crack the <em>signal.</em></h1><p class="subtitle">One hidden rule. A whole chat of researchers.</p></div>
+        <div><p class="eyebrow"><span class="tiny-cross" aria-hidden="true">✳</span> A COOPERATIVE DOMAIN TRIAL</p><h1>Beyond the <em>signal</em><span class="title-star" aria-hidden="true">✧</span></h1><p class="subtitle">Enter a domain. Follow the evidence. Uncover its secret.</p></div>
         <div class="intro-action"><span class="case-label" id="case-label">CASE FILE / 001</span><button class="primary-button" id="start-button">Start practice <span aria-hidden="true">↗</span></button></div>
       </section>
 
@@ -39,9 +40,23 @@
       </section>
 
       <div class="workbench" id="workbench">
-        <div class="experiment-column">
-          <section class="panel reactor-panel" aria-labelledby="machine-title">
-            <div class="panel-heading"><h2 id="machine-title"><span class="section-number">01</span> The mystery machine</h2><span class="quiet-tag" id="machine-status">AWAITING INPUT</span></div>
+<aside class="panel prep-panel" aria-labelledby="prep-title">
+  <div class="panel-heading"><h2 id="prep-title"><span class="section-number">✧</span> Prepare a signal</h2></div>
+  <p class="prep-intro">A colour. A shape. A rhythm.<br>What will the guardian accept?</p>
+  <div class="signal-builder">
+              <div class="builder-heading"><span id="builder-title">SIGNAL PARAMETERS</span><span id="builder-mode">PRACTICE INPUT</span></div>
+              <div class="builder-controls">
+                <label for="signal-color">Colour<select id="signal-color"><option value="blue">Blue</option><option value="red">Red</option><option value="amber">Amber</option></select></label>
+                <label for="signal-shape">Shape<select id="signal-shape"><option value="circle">Circle</option><option value="triangle">Triangle</option><option value="square">Square</option></select></label>
+                <label for="signal-pulses">Pulses<select id="signal-pulses"><option value="1">1 pulse</option><option value="2" selected>2 pulses</option><option value="3">3 pulses</option></select></label>
+                <button class="primary-button test-button" id="test-button">Test signal <span aria-hidden="true">→</span></button>
+              </div>
+              <div class="command-preview"><span id="command-intro">CHAT COMMAND</span><code id="command-preview">!test blue circle 2</code></div>
+            </div>
+  <div class="prep-guide"><span class="guide-heading">A SHARED DISCOVERY</span><p>18 experiments. Two wrong locks.<br>One secret to uncover together.</p></div>
+</aside>
+<section class="panel reactor-panel" aria-labelledby="machine-title">
+            <div class="panel-heading"><h2 id="machine-title"><span class="section-number">01</span> Domain encounter</h2><span class="quiet-tag" id="machine-status">AWAITING INPUT</span></div>
             <div class="domain-toolbar" aria-label="Scene and timer settings">
               <div class="domain-tabs" role="group" aria-label="Choose a visual domain"><button type="button" class="domain-tab active" data-domain="aurora" aria-pressed="true"><span class="domain-swatch aurora-swatch"></span>Aurora Glade</button><button type="button" class="domain-tab" data-domain="crimson" aria-pressed="false"><span class="domain-swatch crimson-swatch"></span>Crimson Rift</button></div>
               <div class="scene-options"><label for="case-duration" class="sr-only">Case duration, set before starting</label><select id="case-duration" aria-label="Case duration, set before starting"><option value="180000">3 min</option><option value="300000">5 min</option><option value="480000">8 min</option></select><button type="button" id="effects-button" class="effects-button" aria-pressed="true">Effects: on</button><button type="button" id="reset-case-button" class="effects-button reset-case-button" aria-label="Reset case to setup" title="Clear this case and choose a new timer" disabled>↺</button></div>
@@ -64,35 +79,22 @@
               <div class="machine-output"><span class="stage-label">MACHINE SAYS</span><span class="output-symbol" id="output-symbol" aria-hidden="true">?</span><strong id="output-label">LET’S FIND OUT</strong></div>
               <div class="domain-caption"><span class="domain-presence" aria-hidden="true"></span><span id="domain-state-label">AWAITING YOUR FIRST SIGNAL</span><span id="render-label" class="render-label">AMBIENT EFFECTS</span></div>
             </div>
-            <div class="signal-builder">
-              <div class="builder-heading"><span id="builder-title">BUILD A TEST SIGNAL</span><span id="builder-mode">PRACTICE INPUT</span></div>
-              <div class="builder-controls">
-                <label for="signal-color">Colour<select id="signal-color"><option value="blue">Blue</option><option value="red">Red</option><option value="amber">Amber</option></select></label>
-                <label for="signal-shape">Shape<select id="signal-shape"><option value="circle">Circle</option><option value="triangle">Triangle</option><option value="square">Square</option></select></label>
-                <label for="signal-pulses">Pulses<select id="signal-pulses"><option value="1">1 pulse</option><option value="2" selected>2 pulses</option><option value="3">3 pulses</option></select></label>
-                <button class="primary-button test-button" id="test-button">Test signal <span aria-hidden="true">→</span></button>
-              </div>
-              <div class="command-preview"><span id="command-intro">CHAT COMMAND</span><code id="command-preview">!test blue circle 2</code></div>
-            </div>
-          </section>
-
-          <section class="panel evidence-panel" aria-labelledby="evidence-title">
-            <div class="panel-heading"><h2 id="evidence-title"><span class="section-number">02</span> Follow the evidence</h2><span class="quiet-tag" id="evidence-summary">YOUR SHARED LAB NOTES</span></div>
-            <div class="evidence-empty" id="evidence-empty"><span aria-hidden="true">⌁</span><div><strong>Every signal tells you something.</strong><p>Start a case, send a signal, and compare what passes.</p></div></div>
-            <div class="evidence-table-wrap" id="evidence-table-wrap" hidden><table><caption class="sr-only">Experiments and machine results, newest first</caption><thead><tr><th>#</th><th>Signal</th><th>Researcher</th><th>Result</th></tr></thead><tbody id="evidence-body"></tbody></table></div>
-          </section>
-        </div>
-
-        <section class="panel theory-panel" aria-labelledby="theories-title">
-          <div class="panel-heading"><h2 id="theories-title"><span class="section-number">03</span> What’s the rule?</h2><span class="quiet-tag" id="theory-count">6 POSSIBLE</span></div>
+            </section>
+<section class="panel theory-panel" aria-labelledby="theories-title">
+          <div class="panel-heading"><h2 id="theories-title"><span class="section-number">03</span> Choose your theory</h2><span class="quiet-tag" id="theory-count">6 POSSIBLE</span></div>
           <p class="panel-description" id="theory-help">Test to eliminate theories. Select one to cast a practice vote.</p>
           <div class="theory-list" id="theory-list"></div>
           <div class="lock-area"><div class="vote-summary"><span id="vote-summary">NO VOTES YET</span><span>2 wrong locks end the case</span></div><button class="lock-button" id="lock-button" disabled>Lock the leading theory <span aria-hidden="true">↗</span></button></div>
         </section>
-      </div>
+<section class="panel evidence-panel" id="evidence-panel" aria-labelledby="evidence-title">
+            <div class="panel-heading"><h2 id="evidence-title"><span class="section-number">02</span> Follow the evidence</h2><span class="quiet-tag" id="evidence-summary">YOUR SHARED LAB NOTES</span></div>
+            <div class="evidence-empty" id="evidence-empty"><span aria-hidden="true">⌁</span><div><strong>Every signal tells you something.</strong><p>Start a case, send a signal, and compare what passes.</p></div></div>
+            <div class="evidence-table-wrap" id="evidence-table-wrap" hidden><table><caption class="sr-only">Experiments and machine results, newest first</caption><thead><tr><th>#</th><th>Signal</th><th>Researcher</th><th>Result</th></tr></thead><tbody id="evidence-body"></tbody></table></div>
+          </section>
+</div>
 
       <section class="panel feed-panel" aria-labelledby="feed-title">
-        <div class="panel-heading"><h2 id="feed-title"><span class="feed-dot" aria-hidden="true"></span> Lab activity</h2><div class="feed-tools"><span class="quiet-tag" id="feed-source">PRACTICE · SIMULATED CHAT</span><button class="text-button" id="sample-button">Add sample researcher <span aria-hidden="true">+</span></button></div></div>
+        <div class="panel-heading"><h2 id="feed-title"><span class="feed-dot" aria-hidden="true"></span> Community activity</h2><div class="feed-tools"><span class="quiet-tag" id="feed-source">PRACTICE · SIMULATED CHAT</span><button class="text-button" id="sample-button">Add sample researcher <span aria-hidden="true">+</span></button></div></div>
         <div class="feed-empty" id="feed-empty">A quiet lab, for now. Send the first signal.</div><ol class="feed-list" id="feed-list"></ol>
       </section>
 
