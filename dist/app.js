@@ -1,5 +1,6 @@
 import { LabGame, RULES, COLORS, SHAPES, signalKey } from './engine.js';
 import { TwitchChat, beginTwitchLogin, consumeTwitchLogin, callbackUrl, savedClientId } from './twitch.js';
+import { DomainScene } from './domain.js';
 
 let login = null;
 let loginError = null;
@@ -12,7 +13,9 @@ const element = (tag, className = '', text = '') => {
   node.textContent = text;
   return node;
 };
-let game = new LabGame();
+const scene = new DomainScene();
+let gameDurationMs = 180000;
+let game = new LabGame({ durationMs: gameDurationMs });
 let caseNumber = 1;
 let mode = 'practice';
 let connection = { state: 'disconnected', message: 'Local inputs · not connected to Twitch' };
@@ -66,7 +69,7 @@ function updateBuilder() {
 }
 
 function resetCase(increment = true) {
-  game = new LabGame();
+  game = new LabGame({ durationMs: gameDurationMs });
   if (increment) caseNumber += 1;
   feed = [];
   selectedTheory = null;
@@ -89,6 +92,7 @@ function dispatch(text, actor, local = false) {
   feed = feed.slice(0, 3);
   if (result.kind === 'test') {
     const { experiment } = result;
+    scene.pulse(experiment.accepted);
     $('machine-stage').dataset.result = experiment.accepted ? 'pass' : 'fail';
     $('output-symbol').textContent = experiment.accepted ? '✓' : '×';
     $('output-label').textContent = experiment.accepted ? 'SIGNAL ACCEPTED' : 'SIGNAL REJECTED';
@@ -124,7 +128,7 @@ function renderEvidence(snapshot) {
     rows.push(tr);
   }
   $('evidence-body').replaceChildren(...rows);
-  $('evidence-summary').textContent = hasExperiments ? `${snapshot.experiments.length} OBSERVATIONS` : 'YOUR SHARED LAB NOTES';
+  $('evidence-summary').textContent = hasExperiments ? `${snapshot.experiments.length} OBSERVATION${snapshot.experiments.length === 1 ? '' : 'S'}` : 'YOUR SHARED LAB NOTES';
 }
 
 function renderFeed() {
@@ -144,6 +148,7 @@ function renderClock() {
   const seconds = Math.ceil(game.remainingMs / 1000);
   $('timer').textContent = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
   $('timer').classList.toggle('timer-urgent', seconds <= 30 && game.status !== 'idle');
+  scene.updateClock(game.remainingMs, game.durationMs, $('timer').textContent);
 }
 
 function render() {
@@ -152,6 +157,9 @@ function render() {
   const runnable = mode === 'practice' || connected;
   const running = s.status === 'running';
   const ended = ['won', 'lost'].includes(s.status);
+  scene.setState(s.status);
+  $('case-duration').disabled = running || s.status === 'paused';
+  $('reset-case-button').disabled = s.status === 'idle';
   renderClock();
   $('case-label').textContent = `CASE FILE / ${String(caseNumber).padStart(3, '0')}`;
   $('experiment-count').textContent = String(s.experiments.length).padStart(2, '0');
@@ -273,6 +281,20 @@ async function copyText(text, message) {
 }
 
 $('help-button').addEventListener('click', () => $('help-dialog').showModal());
+$('footer-help-button').addEventListener('click', () => $('help-dialog').showModal());
+$('effects-button').addEventListener('click', () => scene.setEnabled(!scene.enabled));
+$('reset-case-button').addEventListener('click', () => {
+  resetCase();
+  toast('A fresh case is ready. Choose a timer, then start when you are ready.');
+});
+for (const button of document.querySelectorAll('.domain-tab[data-domain]')) button.addEventListener('click', () => scene.setTheme(button.dataset.domain));
+$('case-duration').addEventListener('change', () => {
+  if (!['idle', 'won', 'lost'].includes(game.status)) return;
+  const duration = Number($('case-duration').value);
+  if (![180000, 300000, 480000].includes(duration)) return;
+  gameDurationMs = duration;
+  resetCase(game.status !== 'idle');
+});
 $('connect-button').addEventListener('click', () => $('connect-dialog').showModal());
 for (const button of document.querySelectorAll('[data-close]')) button.addEventListener('click', () => $(button.dataset.close).close());
 for (const dialog of document.querySelectorAll('dialog')) dialog.addEventListener('click', event => { if (event.target === dialog) { const rect = dialog.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close(); } });
@@ -320,4 +342,4 @@ setInterval(() => {
 
 if (loginError) toast(loginError, true);
 if (login) { twitch.connect(login.token, login.clientId); login = null; }
-window.addEventListener('beforeunload', () => twitch.disconnect(false));
+window.addEventListener('beforeunload', () => { twitch.disconnect(false); scene.destroy(); });

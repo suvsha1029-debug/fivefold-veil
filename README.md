@@ -23,7 +23,13 @@ Open <http://localhost:4173/>. The development server binds to the local compute
 
 **Add sample researcher** generates one explicitly labelled simulated experiment. Practice controls and sample researchers never send messages to Twitch. Practice and live case data are reset when switching modes.
 
-Each case lasts three minutes, allows eighteen unique experiments, and ends after two incorrect locks. Duplicate tests do not use the experiment budget. One vote per Twitch user; a new vote replaces their old one. Inputs from each user have a 1.8-second cooldown. Ties must be resolved before a theory can be locked. Paused or ended cases do not accept commands.
+Choose a three-, five-, or eight-minute case before starting. Each case allows eighteen unique experiments and ends after two incorrect locks. The circular timer around the guardian follows the engine's countdown and freezes when paused. The reset arrow clears the current case and returns to timer setup. Duplicate tests do not use the experiment budget. One vote per Twitch user; a new vote replaces their old one. Inputs from each user have a 1.8-second cooldown. Ties must be resolved before a theory can be locked. Paused or ended cases do not accept commands.
+
+## Visual arenas
+
+Choose **Aurora Glade** or **Crimson Rift** above the mystery machine. These change the atmosphere, not the secret rule or game difficulty. The forest reference and original Primordial Shade HTML artwork were provided by the user. The original artwork is rendered in a sandbox with isolated styling; it receives only an animation pause flag, never Twitch tokens, chat, or answers.
+
+The WebGL atmosphere uses one drawing buffer capped at 900 × 600 pixels and draws at most about 30 times per second. Decorative rendering stops while the tab is hidden, the arena is off-screen, or the case is paused/finished. **Effects: still** freezes the guardian and atmosphere. The OS reduced-motion preference is respected automatically. A static scene remains when WebGL is unavailable. The countdown and game logic run independently from the visual renderer.
 
 ## Connect a real Twitch channel
 
@@ -54,7 +60,7 @@ References:
 
 Keep the connected game open in one browser window. Use **OBS Window Capture** for that window. **Stream view** hides setup and host controls; exit with the visible exit button or Escape to pause, resume, or lock a theory. This version does not synchronize separate browser/OBS instances: use Window Capture rather than opening an independent OBS Browser Source.
 
-The app has no external fonts, analytics, images, game engines, paid services, or API inference requirements. The machine illustration and interface are drawn in HTML/CSS/SVG.
+The app has no external fonts, analytics, game engines, paid services, or API inference requirements. User-provided art is bundled locally; the atmosphere and interface use HTML/CSS/SVG and a small WebGL shader.
 
 ## Validation
 
@@ -73,6 +79,10 @@ Tests cover command validation, timeouts and pause semantics, identification of 
 - `dist/engine.js`: game rules, timing, evidence, voting, and outcomes
 - `dist/twitch.js`: OAuth and Twitch EventSub adapter
 - `dist/app.js`: interface and lifecycle
+- `dist/domain.js`, `dist/domain.css`: visual arenas, effects, and circular timer
+- `dist/assets/primordial-shade.html`: adapted user-provided artwork with a motion-control bridge
+- `dist/assets/aurora-forest.png`: unchanged user-provided forest reference
+- `tools/import-primordial.mjs`: imports the original artwork without modifying the source file
 - `server.mjs`: local static server
 - `tests/`: Node built-in test suite
 - `SUBMISSION.md`: submission checklist and proposed video script

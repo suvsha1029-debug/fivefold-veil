@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.mjs",
     "test": "node --test",
-    "check": "node --check dist/app.js && node --check dist/engine.js && node --check dist/twitch.js && node --check server.mjs"
+    "check": "node --check dist/app.js && node --check dist/engine.js && node --check dist/twitch.js && node --check dist/domain.js && node --check server.mjs"
   },
   "engines": { "node": ">=22" }
 }

@@ -9,6 +9,7 @@
   <title>Signal Lab — crack it together</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="domain.css">
   <script type="module" src="app.js"></script>
 </head>
 <body>
@@ -41,15 +42,27 @@
         <div class="experiment-column">
           <section class="panel reactor-panel" aria-labelledby="machine-title">
             <div class="panel-heading"><h2 id="machine-title"><span class="section-number">01</span> The mystery machine</h2><span class="quiet-tag" id="machine-status">AWAITING INPUT</span></div>
-            <div class="machine-stage" id="machine-stage" data-result="idle">
-              <div class="stage-grid" aria-hidden="true"></div>
-              <span class="stage-coordinate" aria-hidden="true">SL–01 / INPUT ANALYSIS</span>
-              <div class="input-specimen"><span class="stage-label">YOUR SIGNAL</span><div class="specimen-shape blue circle" id="specimen-shape"></div><span class="specimen-description" id="specimen-description">BLUE · CIRCLE · 2 PULSES</span></div>
+            <div class="domain-toolbar" aria-label="Scene and timer settings">
+              <div class="domain-tabs" role="group" aria-label="Choose a visual domain"><button type="button" class="domain-tab active" data-domain="aurora" aria-pressed="true"><span class="domain-swatch aurora-swatch"></span>Aurora Glade</button><button type="button" class="domain-tab" data-domain="crimson" aria-pressed="false"><span class="domain-swatch crimson-swatch"></span>Crimson Rift</button></div>
+              <div class="scene-options"><label for="case-duration" class="sr-only">Case duration, set before starting</label><select id="case-duration" aria-label="Case duration, set before starting"><option value="180000">3 min</option><option value="300000">5 min</option><option value="480000">8 min</option></select><button type="button" id="effects-button" class="effects-button" aria-pressed="true">Effects: on</button><button type="button" id="reset-case-button" class="effects-button reset-case-button" aria-label="Reset case to setup" title="Clear this case and choose a new timer" disabled>↺</button></div>
+            </div>
+            <div class="machine-stage domain-stage" id="machine-stage" data-result="idle" data-domain="aurora" data-motion="on">
+              <div class="domain-landscape" aria-hidden="true"></div>
+              <canvas id="domain-shader" aria-hidden="true"></canvas>
+              <div class="domain-vignette" aria-hidden="true"></div>
+              <span class="stage-coordinate" id="domain-coordinate">DOMAIN 01 / AURORA GLADE</span>
+              <span class="domain-narrative" id="domain-narrative">Something in the forest is listening.</span>
+              <div class="input-specimen"><span class="stage-label">TEST SIGNAL</span><div class="specimen-shape blue circle" id="specimen-shape"></div><span class="specimen-description" id="specimen-description">BLUE · CIRCLE · 2 PULSES</span></div>
               <div class="signal-path" aria-hidden="true"><span></span><span></span><span></span></div>
-              <div class="reactor"><div class="reactor-orbit orbit-one"></div><div class="reactor-orbit orbit-two"></div><div class="reactor-core"><span id="core-glyph" aria-hidden="true">✳</span></div><span class="reactor-caption">RULE UNKNOWN</span></div>
+              <div class="reactor oracle" id="oracle">
+                <svg class="countdown-ring" viewBox="0 0 300 300" aria-hidden="true"><circle class="ring-track" cx="150" cy="150" r="139"/><circle class="ring-ticks" cx="150" cy="150" r="130" pathLength="100"/><circle class="ring-progress" id="ring-progress" cx="150" cy="150" r="139" pathLength="100"/></svg>
+                <iframe class="oracle-emblem" id="oracle-emblem" src="assets/primordial-shade.html" title="Your Primordial Shade guardian" sandbox="allow-scripts" tabindex="-1" aria-hidden="true"></iframe>
+                <span class="oracle-topline">THE ANOMALY</span>
+                <div class="oracle-clock"><strong id="domain-clock">03:00</strong><span id="domain-clock-label">TIME REMAINING</span></div>
+              </div>
               <div class="signal-path path-out" aria-hidden="true"><span></span><span></span><span></span></div>
               <div class="machine-output"><span class="stage-label">MACHINE SAYS</span><span class="output-symbol" id="output-symbol" aria-hidden="true">?</span><strong id="output-label">LET’S FIND OUT</strong></div>
-              <span class="stage-corner" aria-hidden="true">+ EXPERIMENT / OBSERVE / INFER +</span>
+              <div class="domain-caption"><span class="domain-presence" aria-hidden="true"></span><span id="domain-state-label">AWAITING YOUR FIRST SIGNAL</span><span id="render-label" class="render-label">AMBIENT EFFECTS</span></div>
             </div>
             <div class="signal-builder">
               <div class="builder-heading"><span id="builder-title">BUILD A TEST SIGNAL</span><span id="builder-mode">PRACTICE INPUT</span></div>
@@ -86,13 +99,13 @@
       <section class="result-panel" id="result-panel" aria-labelledby="result-title" hidden><div><p class="eyebrow" id="result-eyebrow">CASE CLOSED</p><h2 id="result-title">You cracked the signal.</h2><p id="result-description"></p><p class="revealed-rule" id="revealed-rule"></p></div><button class="primary-button" id="new-case-button">Open a new case <span aria-hidden="true">↗</span></button></section>
     </main>
 
-    <footer><span>SIGNAL LAB <span class="footer-divider">/</span> BUILT WITH CODEX</span><span>TEST. COMPARE. THINK TOGETHER. <span aria-hidden="true">✳</span></span></footer>
+    <footer><span>SIGNAL LAB <span class="footer-divider">/</span> BUILT WITH CODEX</span><button class="text-button" id="footer-help-button">How to play ↗</button><span>TEST. COMPARE. THINK TOGETHER. <span aria-hidden="true">✳</span></span></footer>
   </div>
 
   <button id="exit-stream-button" class="outline-button exit-stream" hidden>Exit stream view</button>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <dialog id="help-dialog" aria-labelledby="help-title"><div class="dialog-top"><span class="eyebrow">WELCOME TO THE LAB</span><button class="icon-button" data-close="help-dialog" aria-label="Close instructions">×</button></div><h2 id="help-title">A mystery is better<br><em>with company.</em></h2><p>The machine accepts some signals and rejects others. One of the six theories explains its hidden rule.</p><ol class="how-to-list"><li><span>01</span><div><strong>Send an experiment.</strong><p>Choose a colour, shape, and pulse count. In Twitch chat, type <code>!test blue circle 2</code>.</p></div></li><li><span>02</span><div><strong>Follow the evidence.</strong><p>Compare what passes and fails. Theories that contradict a result are crossed out automatically.</p></div></li><li><span>03</span><div><strong>Agree on a theory.</strong><p>Vote with <code>!solve a</code> through <code>!solve f</code>. Each researcher gets one vote and can change it. The streamer locks the leading theory.</p></div></li></ol><div class="dialog-note">3 minutes. 18 unique experiments. 2 incorrect locks. In practice, the controls generate labelled sample chat.</div><button class="primary-button full-width" data-close="help-dialog">Let’s investigate <span aria-hidden="true">→</span></button></dialog>
+  <dialog id="help-dialog" aria-labelledby="help-title"><div class="dialog-top"><span class="eyebrow">WELCOME TO THE LAB</span><button class="icon-button" data-close="help-dialog" aria-label="Close instructions">×</button></div><h2 id="help-title">A mystery is better<br><em>with company.</em></h2><p>The machine accepts some signals and rejects others. One of the six theories explains its hidden rule.</p><ol class="how-to-list"><li><span>01</span><div><strong>Send an experiment.</strong><p>Choose a colour, shape, and pulse count. In Twitch chat, type <code>!test blue circle 2</code>.</p></div></li><li><span>02</span><div><strong>Follow the evidence.</strong><p>Compare what passes and fails. Theories that contradict a result are crossed out automatically.</p></div></li><li><span>03</span><div><strong>Agree on a theory.</strong><p>Vote with <code>!solve a</code> through <code>!solve f</code>. Each researcher gets one vote and can change it. The streamer locks the leading theory.</p></div></li></ol><div class="dialog-note">Choose 3, 5, or 8 minutes before starting. 18 unique experiments. 2 incorrect locks. In practice, the controls generate labelled sample chat.</div><button class="primary-button full-width" data-close="help-dialog">Let’s investigate <span aria-hidden="true">→</span></button></dialog>
 
   <dialog id="connect-dialog" aria-labelledby="connect-title"><div class="dialog-top"><span class="eyebrow">BRING YOUR CHAT INTO THE LAB</span><button class="icon-button" data-close="connect-dialog" aria-label="Close Twitch setup">×</button></div><h2 id="connect-title">Connect <em>Twitch.</em></h2><p>Sign in with the Twitch account that owns the channel. Signal Lab requests permission to read that channel’s chat.</p><div id="connected-details" hidden><p id="connected-channel"></p><button id="disconnect-button" class="outline-button full-width">Disconnect and return to practice</button></div><form id="connect-form"><ol class="setup-list"><li>Enable 2FA on your Twitch account.</li><li>Register an app in the <a href="https://dev.twitch.tv/console/apps" target="_blank" rel="noopener noreferrer">Twitch Developer Console ↗</a>. Choose a <strong>Public</strong> client type, if asked.</li><li>Add this exact OAuth Redirect URL:<div class="callback-box"><code id="callback-url"></code><button type="button" class="text-button" id="copy-callback">Copy</button></div></li><li>Paste the app’s <strong>Client ID</strong> below. Then authorize Twitch.</li></ol><label class="client-label" for="client-id">Twitch Client ID</label><input id="client-id" name="client-id" autocomplete="off" spellcheck="false" maxlength="64" placeholder="Your app’s public Client ID" required><p class="field-note">Use the Client ID, not the client secret. Sign-in stays in memory; refreshing requires reconnecting.</p><p id="connect-error" class="form-error" role="alert" hidden></p><button type="submit" class="primary-button full-width">Authorize with Twitch <span aria-hidden="true">↗</span></button></form></dialog>
 </body>
