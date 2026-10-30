@@ -1,0 +1,13 @@
+{
+  "name": "signal-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A collaborative Twitch chat mystery: test signals, compare evidence, crack the hidden rule.",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test",
+    "check": "node --check dist/app.js && node --check dist/engine.js && node --check dist/twitch.js && node --check server.mjs"
+  },
+  "engines": { "node": ">=22" }
+}
