@@ -22,7 +22,7 @@ createServer(async (req, res) => {
   }
   try {
     const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
-    const path = resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname));
+    const path = resolve(root, '.' + (pathname === '/' ? '/index.html' : ['/teams','/teams/'].includes(pathname)?'/teams.html':pathname));
     if (!path.startsWith(root.endsWith(sep) ? root : root + sep)) {
       res.writeHead(403, headers).end('Forbidden');
       return;

@@ -87,3 +87,93 @@ test('invalid JSON, bad duration and cross-origin mutations fail with controlled
   const h=harness();assert.equal((await h.call('',{durationMs:12})).status,400);
   const api=new RoomApi(new MemoryRoomStore());const response=await api.fetch(new Request('https://veil.test/api/rooms',{method:'POST',headers:{'Content-Type':'application/json',Origin:'https://other.test'},body:'{}'}));assert.equal(response.status,403);
 });
+
+test('automatic joining balances seats; watching creates no membership or permissions',async()=>{
+  const h=harness(),room=await create(h);
+  const viewers=await Promise.all(Array.from({length:5},(_,i)=>join(h,room,'auto','Viewer '+i)));
+  assert.equal(new Set(viewers.map(v=>v.state.me.team)).size,5);
+  const watcher=await h.call('/'+room.code);
+  assert.equal(watcher.me,null);assert.equal(watcher.isHost,false);assert.equal(watcher.members.length,5);
+  assert.equal((await h.call('/'+room.code+'/hint-request',{eyeId:'heart'})).status,401);
+});
+
+test('small crew can finish with one member; standard rooms still require two teams',async()=>{
+  for(const minimumTeams of [1,2]){
+    const h=harness(),created=await h.call('',{minimumTeams}),room={code:created.state.code,token:created.token};
+    assert.equal(created.state.minimumTeams,minimumTeams);
+    const member=await join(h,room),fixture=new VeilGame({seed:'room-test'});
+    await h.call('/'+room.code+'/control',{type:'start'},room.token);
+    for(const eye of fixture.eyes){
+      await h.call('/'+room.code+'/command',{text:textFor(eye.id,SIGNALS[0])},member.token);h.advance();
+      const option=eye.options.find(o=>o.rule.id===eye.rule.id).id;
+      await h.call('/'+room.code+'/command',{text:`!solve ${eye.id} ${option}`},member.token);h.advance();
+      assert.equal((await h.call('/'+room.code+'/control',{type:'seal',eyeId:eye.id},room.token)).result.kind,'sealed');
+    }
+    const solution=SIGNALS.find(s=>fixture.eyes.every(e=>e.rule.accepts(s)));
+    await h.call('/'+room.code+'/command',{text:`!bind ${solution.color} ${solution.shape} ${solution.pulses}`},member.token);
+    const result=await h.call('/'+room.code+'/control',{type:'bind'},room.token);
+    assert.equal(result.status,minimumTeams===1?200:409);
+    if(minimumTeams===1)assert.equal(result.state.game.status,'won');
+    const reset=await h.call('/'+room.code+'/control',{type:'reset'},room.token);
+    assert.equal(reset.state.minimumTeams,minimumTeams);
+  }
+  assert.equal((await harness().call('',{minimumTeams:0})).status,400);
+});
+
+test('legacy rooms retain the two-team requirement',async()=>{
+  const h=harness(),room=await create(h),row=await h.store.get(room.code);
+  delete row.data.minimumTeams;await h.store.save(room.code,row.data,row.version);
+  assert.equal((await h.call('/'+room.code)).minimumTeams,2);
+});
+
+test('nudge requests are bounded and only the host can publish; nudges spend no evidence',async()=>{
+  const h=harness(),room=await create(h),member=await join(h,room);
+  const base='/'+room.code;
+  assert.equal((await h.call(base+'/hint-request',{eyeId:'heart'},member.token)).status,409);
+  await h.call(base+'/control',{type:'start'},room.token);
+  const request=await h.call(base+'/hint-request',{eyeId:'heart'},member.token);
+  assert.equal(request.state.hintRequests.heart,1);assert.deepEqual(request.state.myHintRequests,['heart']);
+  assert.equal(request.state.hint,null);assert.equal(request.state.game.participants,0);
+  assert.equal((await h.call(base+'/hint-request',{eyeId:'heart'},member.token)).status,409);
+  assert.equal((await h.call(base+'/hint-request',{eyeId:'crown'},member.token)).status,429);
+  assert.equal((await h.call(base+'/control',{type:'hint',eyeId:'heart'},member.token)).status,403);
+  assert.equal((await h.call(base+'/control',{type:'hint',eyeId:'unknown'},room.token)).status,409);
+  const before=(await h.call(base)).game;
+  const published=await h.call(base+'/control',{type:'hint',eyeId:'heart',requestId:'stable-hint-request'},room.token);
+  assert.equal(published.result.kind,'hint');assert.equal(published.state.hintRequests.heart,0);
+  assert.deepEqual(published.state.game,before);assert.equal(published.state.hint.eyeId,'heart');
+  const replay=await h.call(base+'/control',{type:'hint',eyeId:'heart',requestId:'stable-hint-request'},room.token);
+  assert.equal(replay.state.activity.length,published.state.activity.length);
+  const spectator=await h.call(base);assert.equal(spectator.hint.text,published.state.hint.text);assert.deepEqual(spectator.myHintRequests,[]);
+  assert.equal(spectator.game.eyes.find(e=>e.id==='heart').discovery,null);
+  const fixture=new VeilGame({seed:'room-test'}),signal=fixture.suggest('heart');
+  const options=fixture.compatible(fixture.eye('heart'));assert.ok(options.some(o=>o.rule.accepts(signal)));assert.ok(options.some(o=>!o.rule.accepts(signal)));
+  assert.ok(published.state.hint.text.includes(`${signal.color} ${signal.shape}`));
+  const tested=await h.call(base+'/command',{text:textFor('heart',signal)},member.token);
+  assert.equal(tested.result.kind,'test');assert.equal(tested.state.hint,null);
+  h.advance(30000);await h.call(base+'/hint-request',{eyeId:'crown'},member.token);
+  const reset=await h.call(base+'/control',{type:'reset'},room.token);
+  assert.equal(reset.state.hint,null);assert.ok(Object.values(reset.state.hintRequests).every(n=>n===0));
+});
+
+test('nudges persist across request instances and can be dismissed while the clock is held',async()=>{
+  const h=harness(),room=await create(h);await h.call('/'+room.code+'/control',{type:'start'},room.token);
+  await h.call('/'+room.code+'/control',{type:'pause'},room.token);
+  const shared=await h.call('/'+room.code+'/control',{type:'hint',eyeId:'crown'},room.token);
+  assert.equal(shared.state.game.status,'paused');
+  const recovered=new RoomApi(h.store,{now:()=>1000});
+  const state=await (await recovered.fetch(new Request('https://veil.test/api/rooms/'+room.code))).json();
+  assert.deepEqual(state.hint,shared.state.hint);
+  const cleared=await h.call('/'+room.code+'/control',{type:'clearHint'},room.token);assert.equal(cleared.state.hint,null);
+});
+
+test('Twitch hint requests use the host relay and do not earn a vote',async()=>{
+  const h=harness(),room=await create(h),base='/'+room.code;
+  await h.call(base+'/control',{type:'start'},room.token);
+  const body={userId:'34567',name:'Chat helper',channel:'test_channel',text:'!hint crown'};
+  const requested=await h.call(base+'/twitch',body,room.token);
+  assert.equal(requested.result.kind,'hintRequested');assert.equal(requested.state.hintRequests.crown,1);
+  assert.equal(requested.state.game.participants,0);assert.equal(requested.state.hint,null);
+  assert.equal(requested.state.members[0].id,'T-34567');
+  assert.equal((await h.call(base+'/twitch',body,room.token)).status,409);
+});

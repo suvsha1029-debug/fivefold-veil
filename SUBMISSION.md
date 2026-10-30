@@ -12,7 +12,11 @@ The particular combination of contributor-earned votes, simultaneous eye investi
 - [x] Viewer avatar/team selection, accessible emoji keyboard, shared cross-browser evidence/votes
 - [x] Late-join evidence citations earn voting rights without using an experiment slot
 - [x] Host-only controls, hashed private credentials, versioned writes and idempotent actions
-- [x] Final binding requires evidence contributions from at least two teams
+- [x] Final binding requires two contributing teams by default, or one in host-selected small-crew mode
+- [x] Quick joining with optional personalization, watch-only participation, audience view and live next-step recap
+- [x] Viewer nudge requests and host-shared guidance derived from public theories; no automatic experiments or vote credit
+- [x] Viewers-lead, shared and host-led modes with server-enforced decision permissions and host approval of browser/Twitch experiments
+- [x] Host-authored rule options and labels, private answer editor, and validation of a unique final signal with five necessary clues
 
 Team-room views are at `/teams`. The current Site remains owner-private: room invitations do not grant Site access. Browser seats are guest identities, separate from Twitch host-relay identities; they do not prove one human per vote. Do not claim a live Twitch multi-viewer session or OBS broadcast until tested. The room member cap of 200 is not a load-test result.
 

@@ -37,6 +37,26 @@ function buildRules() {
   return Object.freeze(rules);
 }
 export const RULE_POOL = buildRules();
+export function authoredPuzzle(definition) {
+  if(!Array.isArray(definition)||definition.length!==5)throw new Error('Design all five eyes.');
+  const eyes=EYES.map(eye=>{
+    const spec=definition.find(s=>s.id===eye.id);
+    if(!spec||!Array.isArray(spec.options)||spec.options.length!==4||!['a','b','c','d'].includes(spec.correct))throw new Error(`${eye.name} needs four options and one correct answer.`);
+    const options=spec.options.map((o,i)=>{
+      const rule=RULE_POOL.find(r=>r.id===o.ruleId);
+      if(!rule)throw new Error(`${eye.name} has an unknown rule.`);
+      const label=String(o.label||'').trim().replace(/[\p{Cc}\p{Cf}]/gu,'');
+      if(label.length>48)throw new Error('Option labels must be 48 characters or shorter.');
+      return {id:'abcd'[i],rule,label};
+    });
+    if(new Set(options.map(o=>o.rule.mask)).size!==4)throw new Error(`${eye.name} needs four different rules.`);
+    return {...eye,options,rule:options.find(o=>o.id===spec.correct).rule};
+  });
+  const remaining=eyes.reduce((mask,eye)=>mask&eye.rule.mask,ALL),count=bitCount(remaining);
+  if(count!==1)throw new Error(`These five correct rules allow ${count} final signals. Adjust them until exactly one remains.`);
+  if(!eyes.every((_,i)=>bitCount(eyes.reduce((mask,e,j)=>i===j?mask:mask&e.rule.mask,ALL))>1))throw new Error('One of the five correct rules is redundant. Each eye must add a necessary clue.');
+  return eyes;
+}
 function randomFor(seed) {
   let state = 2166136261;
   for (const char of seed) state = Math.imul(state ^ char.charCodeAt(0),16777619) >>> 0;
@@ -92,13 +112,14 @@ const rankedVotes = votes => {
 };
 
 export class VeilGame {
-  constructor({seed='first-light',durationMs=480000}={}) {
+  constructor({seed='first-light',durationMs=480000,definition=null}={}) {
     if (!Number.isInteger(durationMs) || durationMs<180000 || durationMs>720000) throw new Error('Invalid duration');
     this.seed=seed; this.durationMs=durationMs; this.remainingMs=durationMs;
     this.status='idle'; this.deadline=null; this.strikes=0; this.maxStrikes=3; this.sequence=0;
     this.endReason=null; this.finalSignal=null; this.bindingVotes=new Map(); this.bindingHistory=[];
     this.focus=new Map(); this.cooldowns=new Map(); this.testWindows=new Map(); this.participants=new Map();
-    this.eyes=createPuzzle(seed).map(eye=>({...eye,experiments:[],citations:new Map(),votes:new Map(),wrong:new Set(),sealed:false}));
+    this.definition=definition?structuredClone(definition):null;
+    this.eyes=(definition?authoredPuzzle(definition):createPuzzle(seed)).map(eye=>({...eye,experiments:[],citations:new Map(),votes:new Map(),wrong:new Set(),sealed:false}));
     this.maxPerEye=6;
   }
   get phase(){return this.eyes.every(e=>e.sealed)?'binding':'investigation';}
@@ -147,21 +168,24 @@ export class VeilGame {
     const possible=new Set(this.compatible(eye).map(o=>o.id));for(const [id,vote]of eye.votes)if(!possible.has(vote.optionId))eye.votes.delete(id);
     return {kind:'test',eyeId:eye.id,experiment,name,source,command:`!test ${eye.id} ${command.signal.color} ${command.signal.shape} ${command.signal.pulses}`};
   }
-  lockEye(eyeId,now=Date.now()) {
+  lockEye(eyeId,now=Date.now(),choice=null) {
     this.tick(now);if(this.status!=='running')return problem('Resume the encounter before sealing an eye.');
     const eye=this.eye(eyeId);if(!eye || eye.sealed)return problem('Choose an unsealed eye.');
-    const ranked=rankedVotes(eye.votes);if(!ranked.length)return problem('A contributor must vote for a theory first.');
-    if(ranked[1]&&ranked[0][1]===ranked[1][1])return problem('The vote is tied. Ask a contributor to change their vote.');
-    const option=eye.options.find(o=>o.id===ranked[0][0]);
+    if(choice&&!eye.experiments.length)return problem('Record an experiment before choosing this eye’s rule.');
+    const ranked=rankedVotes(eye.votes);if(!choice&&!ranked.length)return problem('A contributor must vote for a theory first.');
+    if(!choice&&ranked[1]&&ranked[0][1]===ranked[1][1])return problem('The vote is tied. Ask a contributor to change their vote.');
+    const option=eye.options.find(o=>o.id===(choice||ranked[0][0]));
+    if(!option||!this.compatible(eye).includes(option))return problem('Choose a theory that still fits the recorded evidence.');
     if(option.rule.id===eye.rule.id){eye.sealed=true;return {kind:'sealed',eyeId:eye.id,name:eye.name,description:eye.rule.description,phase:this.phase};}
     eye.wrong.add(option.id);eye.votes.clear();this.fracture('Three incorrect locks fractured the veil.');
     return {kind:'wrong',eyeId:eye.id,message:'The guardian rejected that theory. One fracture added; compare the evidence.'};
   }
-  commitBinding(now=Date.now()) {
+  commitBinding(now=Date.now(),choice=null) {
     this.tick(now);if(this.status!=='running' || this.phase!=='binding')return problem('Seal all five eyes and resume the encounter first.');
-    const ranked=rankedVotes(this.bindingVotes);if(!ranked.length)return problem('Chat must propose a binding signal with !bind first.');
-    if(ranked[1]&&ranked[0][1]===ranked[1][1])return problem('The binding vote is tied. Agree on one signal.');
-    const signal=SIGNALS.find(s=>signalKey(s)===ranked[0][0]);
+    if(choice&&!validSignal(choice))return problem('Choose a valid final signal.');
+    const ranked=rankedVotes(this.bindingVotes);if(!choice&&!ranked.length)return problem('Chat must propose a binding signal with !bind first.');
+    if(!choice&&ranked[1]&&ranked[0][1]===ranked[1][1])return problem('The binding vote is tied. Agree on one signal.');
+    const signal=choice||SIGNALS.find(s=>signalKey(s)===ranked[0][0]);
     const accepted=this.eyes.every(e=>e.rule.accepts(signal));
     this.bindingHistory.push({signal:{...signal},accepted});
     if(!accepted){this.bindingVotes.clear();this.fracture('Three incorrect locks fractured the veil.');return {kind:'wrongBinding',message:'That signal does not satisfy every eye. Compare the five discoveries. One fracture added.'};}
@@ -178,18 +202,18 @@ export class VeilGame {
   }
   snapshot() {
     const ended=['won','lost'].includes(this.status);
-    const eyes=this.eyes.map(eye=>{const possible=new Set(this.compatible(eye).map(o=>o.id));const counts=Object.fromEntries(eye.options.map(o=>[o.id,0]));for(const vote of eye.votes.values())counts[vote.optionId]++;return {...EYES.find(e=>e.id===eye.id),sealed:eye.sealed,experiments:eye.experiments.map(e=>({...e})),contributors:new Set(eye.experiments.map(e=>e.by)).size,voteTotal:eye.votes.size,options:eye.options.map(o=>({id:o.id,description:o.rule.description,eliminated:!possible.has(o.id),votes:counts[o.id]})),discovery:eye.sealed||ended?eye.rule.description:null};});
+    const eyes=this.eyes.map(eye=>{const possible=new Set(this.compatible(eye).map(o=>o.id));const counts=Object.fromEntries(eye.options.map(o=>[o.id,0]));for(const vote of eye.votes.values())counts[vote.optionId]++;return {...EYES.find(e=>e.id===eye.id),sealed:eye.sealed,experiments:eye.experiments.map(e=>({...e})),contributors:new Set(eye.experiments.map(e=>e.by)).size,voteTotal:eye.votes.size,options:eye.options.map(o=>({id:o.id,label:o.label||null,description:o.rule.description,eliminated:!possible.has(o.id),votes:counts[o.id]})),discovery:eye.sealed||ended?eye.rule.description:null};});
     const experiments=eyes.flatMap(e=>e.experiments).sort((a,b)=>a.sequence-b.sequence);
     const binding=rankedVotes(this.bindingVotes).map(([key,votes])=>({signal:{...SIGNALS.find(s=>signalKey(s)===key)},votes}));
     return {seed:this.seed,status:this.status,phase:this.phase,durationMs:this.durationMs,remainingMs:this.remainingMs,strikes:this.strikes,maxStrikes:this.maxStrikes,eyes,experiments,participants:this.participants.size,sealedCount:eyes.filter(e=>e.sealed).length,binding,bindingVoteTotal:this.bindingVotes.size,finalSignal:this.finalSignal?{...this.finalSignal}:null,endReason:this.endReason,score:this.status==='won'?1000+Math.ceil(this.remainingMs/1000)*2+Math.max(0,30-experiments.length)*20:0};
   }
   serialize(now=Date.now()) {
     this.tick(now);
-    return {version:2,seed:this.seed,durationMs:this.durationMs,remainingMs:this.remainingMs,status:this.status,strikes:this.strikes,eyes:this.eyes.map(e=>({id:e.id,experiments:e.experiments.map(x=>({...x})),citations:[...e.citations],votes:[...e.votes],wrong:[...e.wrong],sealed:e.sealed})),bindingVotes:[...this.bindingVotes],bindingHistory:this.bindingHistory,finalSignal:this.finalSignal};
+    return {version:2,seed:this.seed,definition:this.definition,durationMs:this.durationMs,remainingMs:this.remainingMs,status:this.status,strikes:this.strikes,eyes:this.eyes.map(e=>({id:e.id,experiments:e.experiments.map(x=>({...x})),citations:[...e.citations],votes:[...e.votes],wrong:[...e.wrong],sealed:e.sealed})),bindingVotes:[...this.bindingVotes],bindingHistory:this.bindingHistory,finalSignal:this.finalSignal};
   }
   static restore(saved) {
     if(!saved || saved.version!==2 || !Array.isArray(saved.eyes) || saved.eyes.length!==5)throw new Error('Unrecognized saved encounter.');
-    const game=new VeilGame({seed:saved.seed,durationMs:saved.durationMs});
+    const game=new VeilGame({seed:saved.seed,durationMs:saved.durationMs,definition:saved.definition||null});
     if(!Number.isFinite(saved.remainingMs)||saved.remainingMs<0||saved.remainingMs>game.durationMs||!Number.isInteger(saved.strikes)||saved.strikes<0||saved.strikes>3)throw new Error('Invalid saved encounter.');
     let sequence=new Set();
     for(const eye of game.eyes){

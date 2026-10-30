@@ -1,5 +1,5 @@
 import { DOMAINS, getDomain } from './domains.js';
-import { CHAMBERS } from './chamber-engine.js';
+import { CHAMBERS, RELAY_NAMES, echoEffects, rotateEcho, chamberRule, relayDescription } from './chamber-engine.js';
 
 const $=id=>document.getElementById(id);
 const el=(tag,cls='',text='')=>{const n=document.createElement(tag);n.className=cls;n.textContent=text;return n;};
@@ -30,6 +30,8 @@ export class DomainChambers {
     $('chamber-close').addEventListener('click',()=>$('chamber-dialog').close());
     $('chamber-dialog').addEventListener('close',()=>this.leave());
     $('chamber-dialog').addEventListener('keydown',event=>{if(/^[123]$/.test(event.key)&&!event.ctrlKey&&!event.metaKey&&!event.altKey){event.preventDefault();this.selected=Number(event.key)-1;this.render();this.landmarks[this.selected]?.focus();}});
+    this.passport=el('details','chamber-passport');this.passport.append(el('summary','','Expedition passport · 0/6'));this.passportBody=el('div','passport-pages');this.passport.append(this.passportBody);$('chamber-portals').before(this.passport);
+    this.forecast=el('div','chamber-forecast');this.forecast.setAttribute('aria-label','Preview of your next tune');$('chamber-link-note').after(this.forecast);
     this.feedback=el('p','chamber-feedback');this.feedback.setAttribute('role','status');$('chamber-tune').after(this.feedback);
     $('chamber-tune').addEventListener('click',async()=>{const result=await this.tune(this.domain,this.selected);if(result){this.feedback.textContent=result.message;this.feedback.dataset.error='false';this.toast(result.message);}});
     for(const domain of DOMAINS){const button=el('button','chamber-portal');button.type='button';button.dataset.domain=domain.id;const img=el('img');img.src=domain.asset;img.alt='';img.loading='lazy';button.append(img,el('span','',`${domain.symbol} ${domain.name}`),el('small'));button.addEventListener('click',()=>this.visit(domain.id));this.tiles.set(domain.id,button);$('chamber-portals').append(button);}
@@ -44,8 +46,6 @@ export class DomainChambers {
   leave(){this.scene.setChamberOpen(false);if(this.emblemHome){this.emblemHome.insertBefore(this.scene.emblem,this.emblemNext);this.emblemHome=null;}document.body.classList.remove('in-chamber');this.worlds.preview=this.returnWorld;this.worlds.render();}
   createMap(place){
     $('chamber-landmarks').replaceChildren();this.landmarks=[];
-    const paths=place.stations.map((s,i)=>{const next=place.stations[(i+1)%3],x=s[1]*10,y=s[2]*6,nx=next[1]*10,ny=next[2]*6,mx=(x+nx)/2,my=(y+ny)/2;return `<path data-route="${i}" d="M${x} ${y} Q${mx+(mx-500)*.4} ${my+(my-300)*.4} ${nx} ${ny}" marker-end="url(#chamber-arrow)"/>`;}).join('');
-    $('chamber-routes').innerHTML=`<defs><marker id="chamber-arrow" markerWidth="6" markerHeight="6" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0 0L6 3L0 6" fill="none" stroke="currentColor"/></marker></defs>${paths}`;
     for(const [i,station]of place.stations.entries()){const button=el('button','chamber-landmark');button.type='button';button.style.left=`calc(${station[1]}% - var(--landmark-half-width))`;button.style.top=`calc(${station[2]}% - var(--landmark-half-height))`;const art=el('span','landmark-art');art.innerHTML=icon(station[3]);button.append(art,el('strong','landmark-name',`${i+1} / ${station[0]}`),el('span','landmark-phase'));button.addEventListener('click',()=>{this.selected=i;this.render();});$('chamber-landmarks').append(button);this.landmarks.push(button);}
     if(!this.emblemHome){this.emblemHome=this.scene.emblem.parentNode;this.emblemNext=this.scene.emblem.nextSibling;}
     // Reuse the original sandboxed guardian. No second iframe or renderer is created.
@@ -57,15 +57,19 @@ export class DomainChambers {
     const recovered=team.chambers.filter(c=>c.completedAt!==null).length;$('chamber-home-progress').textContent=`${recovered}/6 room memories recovered`;
     if(!$('chamber-dialog').open)return;
     const domain=getDomain(this.domain),place=CHAMBERS[domain.id],chamber=team.chambers.find(c=>c.domain===domain.id);if(!chamber)return;
-    const key=`${chamber.id}`;if(key!==this.key){this.key=key;this.signature='';this.feedback.textContent='';this.selected=0;$('chamber-dialog').dataset.world=domain.id;$('chamber-landscape').style.backgroundImage=`url("${domain.asset}")`;$('chamber-name').textContent=place.title;$('chamber-description').textContent=place.intro;this.createMap(place);}
+    const key=`${chamber.id}:${chamber.ruleVersion}`;if(key!==this.key){this.key=key;this.signature='';this.feedback.textContent='';this.selected=0;$('chamber-dialog').dataset.world=domain.id;$('chamber-landscape').style.backgroundImage=`url("${domain.asset}")`;$('chamber-name').textContent=place.title;$('chamber-description').textContent=`${RELAY_NAMES[chamberRule(chamber)]}. Select a landmark, inspect the predicted phases, then coordinate a tune with your team.`;this.createMap(place);}
     $('chamber-id').textContent=chamber.id;$('chamber-team').textContent=`${team.emoji} ${team.name} team · ${team.members} explorer${team.members===1?'':'s'}`;
     const complete=chamber.completedAt!==null;$('chamber-dialog').dataset.complete=String(complete);$('chamber-dialog').dataset.motion=String(this.scene.enabled&&!document.hidden&&!['paused','won','lost'].includes(state.game.status));
     $('chamber-guardian').style.setProperty('--guardian-hue',domain.hue+'deg');$('chamber-status').textContent=complete?'ROOM MEMORY RECOVERED':'ECHO RELAY / MATCH ALL THREE';
     const matched=chamber.values.filter((v,i)=>v===chamber.target[i]).length;$('chamber-score').textContent=`${matched}/3 aligned · ${chamber.moves} tune${chamber.moves===1?'':'s'} · ${chamber.contributors} contributor${chamber.contributors===1?'':'s'}`;
     for(const [i,button]of this.landmarks.entries()){const match=chamber.values[i]===chamber.target[i];button.dataset.aligned=String(match);button.setAttribute('aria-pressed',String(i===this.selected));button.setAttribute('aria-label',`Inspect ${place.stations[i][0]}, phase ${chamber.values[i]+1}, target phase ${chamber.target[i]+1}${match?', aligned':''}`);button.querySelector('.landmark-phase').textContent=`${place.symbols[chamber.values[i]]} ${chamber.values[i]+1} → ${place.symbols[chamber.target[i]]} ${chamber.target[i]+1}${match?' ✓':''}`;}
-    for(const path of $('chamber-routes').querySelectorAll('[data-route]'))path.classList.toggle('selected',Number(path.dataset.route)===this.selected);
+    const rule=chamberRule(chamber),effects=echoEffects(rule,this.selected),forecast=rotateEcho(chamber.values,this.selected,rule);
+    const routeKey=key+':'+this.selected;if(this.routeKey!==routeKey){this.routeKey=routeKey;const s=place.stations[this.selected],x=s[1]*10,y=s[2]*6;$('chamber-routes').innerHTML=effects.filter(e=>e.node!==this.selected).map(e=>{const t=place.stations[e.node],nx=t[1]*10,ny=t[2]*6;return '<path class="selected" d="M'+x+' '+y+' Q500 290 '+nx+' '+ny+'"/><text x="'+(x+nx)/2+'" y="'+((y+ny)/2-10)+'">'+(e.delta>0?'+1':'−1')+'</text>';}).join('');}
+    this.forecast.replaceChildren(...forecast.map((value,i)=>{const card=el('span',value===chamber.target[i]?'forecast-match':'');card.append(el('small','',String(i+1)+' / NEXT'),el('strong','',place.symbols[value]+' '+(value+1)));return card;}));
+    this.passport.querySelector('summary').textContent=recovered===6?'✧ Six horizons united · 6/6 memories':'Expedition passport · '+recovered+'/6 memories';
+    const passportKey=state.code+':'+state.round+':'+team.id+':'+team.chambers.map(c=>c.completedAt).join(',');if(this.passportKey!==passportKey){this.passportKey=passportKey;this.passportBody.replaceChildren(...team.chambers.map(c=>{const d=getDomain(c.domain),done=c.completedAt!==null,card=el('article',done?'passport-stamp recovered':'passport-stamp');card.append(el('span','passport-symbol',done?d.symbol:'◇'),el('strong','',CHAMBERS[c.domain].title),el('p','',done?CHAMBERS[c.domain].memory:'Visit this room and align its landmarks to recover the memory.'));return card;}));}
     $('chamber-selected').textContent=`0${this.selected+1} / ${place.stations[this.selected][0]}`;$('chamber-current').textContent=`${place.symbols[chamber.values[this.selected]]} ${chamber.values[this.selected]+1}`;$('chamber-target').textContent=`${place.symbols[chamber.target[this.selected]]} ${chamber.target[this.selected]+1}`;
-    $('chamber-link-note').textContent=`${place.verb} this ${place.object} to advance its phase AND ${place.stations[(this.selected+1)%3][0]} by one. Phases cycle 1 → 2 → 3 → 1.`;
+    $('chamber-link-note').textContent=relayDescription(rule,this.selected,domain.id);
     $('chamber-tune').textContent=complete?'Memory recovered ✓':`${place.verb} ${place.object} ↗`;$('chamber-tune').disabled=complete||!state.me||this.isBusy();$('chamber-role-note').textContent=state.me?'Your team shares these landmarks. Tuning fixes your research team for this round.':'Host view · join a viewer seat to tune. Your team members share this room.';
     $('chamber-memory').hidden=!complete;$('chamber-memory').textContent=place.memory;
     const last=chamber.lastMove;$('chamber-last').textContent=last?`${last.avatar} ${last.name} tuned ${place.stations[last.node][0]}.`:'Select a landmark, read its link, then tune. Try coordinating one landmark per teammate.';

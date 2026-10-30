@@ -1,17 +1,27 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {CHAMBERS,initialChamber,rotateEcho,echoAligned} from '../public/chamber-engine.js';
+import {CHAMBERS,initialChamber,rotateEcho,echoAligned,chamberSummary,tuneChamber} from '../public/chamber-engine.js';
 import {DOMAINS} from '../public/domains.js';
 import {RoomApi,MemoryRoomStore} from '../server/rooms.js';
 
 function setup(){let time=1000,serial=0;const store=new MemoryRoomStore(),api=new RoomApi(store,{now:()=>time,seed:()=> 'chamber-tests'});return {store,advance(){time+=500;},async call(path='',body,token){const r=await api.fetch(new Request('https://veil.test/api/rooms'+path,{method:body?'POST':'GET',headers:{...(body?{'Content-Type':'application/json'}:{}),...(token?{Authorization:'Bearer '+token}:{})},body:body?JSON.stringify({requestId:'chamber-request-'+(++serial),...body}):undefined}));return {status:r.status,...await r.json()};}};}
 async function fixture(){const h=setup(),r=await h.call('',{}),a=await h.call('/'+r.state.code+'/join',{name:'First',team:'heart'}),b=await h.call('/'+r.state.code+'/join',{name:'Second',team:'heart'});return {...h,code:r.state.code,host:r.token,a:a.token,b:b.token};}
 const chamber=(response,domain='taiga',team='heart')=>(response.state||response).teams.find(t=>t.eyeId===team).chambers.find(c=>c.domain===domain);
-function solve(values,target){const queue=[[values,[]]],seen=new Set([values.join()]);while(queue.length){const [v,path]=queue.shift();if(v.every((x,i)=>x===target[i]))return path;for(let i=0;i<3;i++){const n=rotateEcho(v,i);if(!seen.has(n.join())){seen.add(n.join());queue.push([n,[...path,i]]);}}}throw Error('Unreachable target');}
+
+test('six rule families have distinct effects and every generated challenge is solvable',()=>{
+  const families=DOMAINS.map(d=>[0,1,2].map(n=>rotateEcho([0,0,0],n,d.id).join()).join('|'));assert.equal(new Set(families).size,6);
+  assert.deepEqual(rotateEcho([0,0,0],0,'corrupted'),[2,1,0]);assert.deepEqual(rotateEcho([0,0,0],1,'fire'),[0,1,1]);assert.deepEqual(rotateEcho([0,0,0],0,'star-sea'),[2,1,1]);
+  for(let round=1;round<=50;round++)for(const d of DOMAINS){const c=initialChamber({code:'ABCDEFG',round},'heart',d.id);assert.ok(!echoAligned(c));assert.ok(solve(c.values,c.target,d.id).length<=6);}
+});
+test('stored original relays retain their rule and progress during upgrade',()=>{
+  const room={code:'ABCDEFG',round:1,chambers:{heart:{fire:{id:'legacy',domain:'fire',values:[0,0,0],target:[2,2,2],moves:3,contributors:[],completedAt:null,lastMove:null}}}};
+  const member={id:'M-1',team:'heart',name:'Explorer',avatar:'🦊'};tuneChamber(room,member,'fire',1,1000);const c=chamberSummary(room,'heart','fire');assert.equal(c.ruleVersion,1);assert.equal(c.moves,4);assert.deepEqual(c.values,[0,1,1]);tuneChamber(room,member,'fire',2,2000);assert.deepEqual(chamberSummary(room,'heart','fire').values,[1,1,2]);
+});
+function solve(values,target,domain='taiga'){const queue=[[values,[]]],seen=new Set([values.join()]);while(queue.length){const [v,path]=queue.shift();if(v.every((x,i)=>x===target[i]))return path;for(let i=0;i<3;i++){const n=rotateEcho(v,i,domain);if(!seen.has(n.join())){seen.add(n.join());queue.push([n,[...path,i]]);}}}throw Error('Unreachable target');}
 
 test('all linked-dial states are reachable; six authored rooms begin unsolved and have distinct IDs',()=>{
   const found=new Set(['0,0,0']),queue=[[0,0,0]];while(queue.length){const v=queue.shift();for(let n=0;n<3;n++){const next=rotateEcho(v,n);if(!found.has(next.join())){found.add(next.join());queue.push(next);}}}assert.equal(found.size,27);
-  const ids=new Set();for(const domain of DOMAINS)for(const team of ['crown','dusk','heart','dawn','root']){const c=initialChamber({code:'ABCDEFG',round:1},team,domain.id);assert.ok(!echoAligned(c));assert.ok(solve(c.values,c.target).length<=6);assert.equal(CHAMBERS[domain.id].stations.length,3);ids.add(c.id);}assert.equal(ids.size,30);
+  const ids=new Set();for(const domain of DOMAINS)for(const team of ['crown','dusk','heart','dawn','root']){const c=initialChamber({code:'ABCDEFG',round:1},team,domain.id);assert.ok(!echoAligned(c));assert.ok(solve(c.values,c.target,domain.id).length<=6);assert.equal(CHAMBERS[domain.id].stations.length,3);ids.add(c.id);}assert.equal(ids.size,30);
 });
 test('teammates share persisted chamber state while team and domain boundaries are enforced',async()=>{
   const h=await fixture(),path='/'+h.code+'/chamber',before=await h.call('/'+h.code);
@@ -26,7 +36,7 @@ test('concurrent tunes survive and duplicate request IDs spend only one move',as
   assert.equal((await h.call(path,{domain:'lunar',node:2},h.a)).status,429);
 });
 test('a solved memory persists through home changes, remains solved, and a new round clears it',async()=>{
-  const h=await fixture();let state=await h.call('/'+h.code),c=chamber(state,'fire'),path=solve(c.values,c.target),last;
+  const h=await fixture();let state=await h.call('/'+h.code),c=chamber(state,'fire'),path=solve(c.values,c.target,'fire'),last;
   for(const [i,node]of path.entries()){h.advance();last=await h.call('/'+h.code+'/chamber',{domain:'fire',node},i%2?h.a:h.b);assert.equal(last.status,200);}
   assert.equal(last.result.kind,'echoComplete');assert.ok(chamber(last,'fire').completedAt);const moves=chamber(last,'fire').moves;h.advance();const same=await h.call('/'+h.code+'/chamber',{domain:'fire',node:0},h.a);assert.equal(chamber(same,'fire').moves,moves);
   await h.call('/'+h.code+'/domain',{domain:'fire'},h.a);state=await h.call('/'+h.code,undefined,h.b);assert.equal(chamber(state,'fire').moves,moves);

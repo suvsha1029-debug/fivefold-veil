@@ -13,7 +13,7 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "test": "node --test tests/*.test.js",
-    "check": "node --check public/app.js && node --check public/engine.js && node --check public/rooms.js && node --check public/domains.js && node --check public/domain.js && node --check public/team-worlds.js && node --check public/chamber-engine.js && node --check public/chambers.js && node --check server/rooms.js && node --check server.mjs"
+    "check": "node --check public/app.js && node --check public/engine.js && node --check public/rooms.js && node --check public/room-guidance.js && node --check public/host-desk.js && node --check public/domains.js && node --check public/domain.js && node --check public/team-worlds.js && node --check public/chamber-engine.js && node --check public/chambers.js && node --check server/rooms.js && node --check server.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

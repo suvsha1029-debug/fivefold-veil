@@ -4,7 +4,29 @@
 
 ## Team rooms
 
-Open **Enter team rooms** on the home page, or `/teams`. The host creates an expedition; viewers join a seven-character room code, choose an avatar/name/team, and compose signals with an accessible emoji keyboard.
+Open **Enter team rooms** on the home page, or `/teams`. The host creates an expedition; viewers follow an invite or enter a seven-character code and a display name. Team and emblem choices are optional: automatic placement balances browser seats across the five teams. Signals use an accessible emoji keyboard.
+
+### Clear participation and optional help
+
+### Streamer control and authored puzzles
+
+The streamer selects a control mode at room creation, or changes it while the clock is idle/held through **Streamer controls & puzzle editor**. Existing rooms default to Shared control. Mode changes clear pending experiment requests without spending experiments; modes survive resets.
+
+- **Viewers lead:** viewers run experiments and vote. An eligible contributor can confirm the leading vote at that eye; an evidence contributor can confirm the leading final binding. Ties remain blocked. Twitch commands are `!seal crown` and `!confirmbind`. The host retains pause/reset and moderation controls.
+- **Shared control:** viewers experiment and vote; only the host confirms the leading votes. This preserves the previous behavior.
+- **Host-led:** viewer tests enter a queue, including Twitch `!test` commands. The host approves or declines each one. Approval runs the experiment as the requesting viewer and earns that viewer evidence. One pending experiment per viewer, at most 24 per room; browser viewers may withdraw. Normal test budgets and cooldowns still apply at approval. Votes are advisory: the host selects a theory card and seals their own choice after evidence exists, then selects the final signal with the keyboard. Wrong decisions still add fractures. Team contribution requirements still apply.
+
+Before a round starts, **Write theories & options** opens a private answer-bearing editor for all five eyes. The host selects four distinct rules per eye, writes optional short labels, and chooses the correct option. Exact logic descriptions remain visible to viewers alongside labels. This is a structured signal-rule editor, not an arbitrary natural-language quiz interpreter. Publication validates exactly one common final signal and requires every eye to contribute a necessary constraint. Invalid drafts leave the current puzzle unchanged. Rule IDs and correct-option mappings are returned only to authenticated hosts while the round is idle, never to spectators or members. Once started, rules cannot change, even while paused. Reset retains an authored design; **Use a new generated puzzle** replaces it while idle. Do not capture the answer editor on stream.
+
+### Joining and guidance
+
+- **Just watch** opens the public room projection without creating a member, earning votes, or storing a guest key. It still respects hosted Site access. Watchers can join later.
+- **Audience view** hides participation and host controls while retaining the guardian, discoveries and journal. Return to full view to operate the room. It is a same-window capture layout, not an independently authenticated OBS overlay.
+- A next-step panel follows the round state and your evidence eligibility. The recap shows discoveries, experiments, the latest result and its remaining theories. New arrivals are directed toward evidence citation when possible.
+- **Small crew** permits final binding with evidence from one team. **Team expedition** retains the two-team requirement. The host chooses at creation; settings survive resets, and older rooms retain the two-team rule. Either mode still requires all five discoveries.
+- Viewers may **Ask host for a nudge**, or use `!hint crown` through the Twitch relay. Requests are limited to one pending request per member/eye and one new request every 30 seconds; request counts show beside the eyes. Requests do not earn votes or lock team membership.
+- Only the host shares a nudge. Suggested experiments split the remaining public hypotheses; they do not inspect the hidden answer, submit an experiment or award evidence. A nudge is cleared when a new test or seal changes that eye, when the host dismisses it, or on reset. Hints and pending requests synchronize through room storage.
+- Personalization and world previews are collapsed by default. The six domain rooms and their progress remain available.
 
 - Room IDs are reserved uniquely in the database. Each of five team IDs combines room code and team name. Member IDs identify browser seats.
 - Rooms last 24 hours. Host control keys are separate from public join links. The server stores hashed keys; API responses never disclose other members' keys or the host key.
@@ -14,13 +36,13 @@ Open **Enter team rooms** on the home page, or `/teams`. The host creates an exp
 - Each team has a home eye; members can help investigate any eye. A member's team is fixed after their first contribution until a new round.
 - Each eye has six unique experiments. A person can test an eye twice per rolling 30 seconds, with a 1.8-second contribution cooldown.
 - A recorded test earns a vote at that eye. Late joiners may instead cite an existing observation that contradicts one of the public theories. Correct citations earn a vote without spending an experiment, even after all six test slots are used.
-- After five seals, contributors propose a signal satisfying all five revealed rules. At least two teams must have contributed evidence before the host can bind. This requires two team memberships, not independently verified human identities.
+- After five seals, contributors propose a signal satisfying all five revealed rules. The selected mode requires evidence from one or two teams before the host binds. This counts team memberships, not independently verified human identities.
 - Three incorrect seals/bindings or a timeout end the encounter. Reset preserves room/member/team IDs while clearing the round's evidence and votes.
 - The current member limit is 200 seats per room. This is a bound, not a verified load-test claim.
 
 Public room state contains display names, member/team IDs, avatars, evidence, votes and discoveries. Keep personal information out of display names. Live-room seeds remain server-side until the encounter ends. Local solo rehearsal exposes its seed deliberately for replay.
 
-The emoji keyboard uses text labels and pressed states alongside glyphs. Arrow keys change choices within each group; Ctrl/Cmd + Enter sends the selected signal. Room play has no informative-test suggestion button. The solo rehearsal keeps assistance for learning.
+The emoji keyboard uses text labels and pressed states alongside glyphs. Arrow keys change choices within each group; Ctrl/Cmd + Enter sends the selected signal. Room nudges are host-controlled; solo rehearsal retains direct assistance for learning.
 
 ## Six team domains
 
@@ -34,7 +56,9 @@ Six compressed WebP environments were generated with the built-in image-generati
 
 Choose **Enter [domain] room**, or enter a room from the domain explorer. Each team has six shared chambers with separate IDs and progress: **The Listening Grove**, **The Fracture Observatory**, **The Moonwell**, **The Ember Stair**, **The Threefold Crossing**, and **The Last-Light Anchorage**. The room atlas lets teammates visit any of their six chambers without changing the voted home.
 
-Select one of three SVG landmarks, then tune it. A tune advances that landmark and the next landmark through phases 1 → 2 → 3 → 1. Match all three displayed targets to recover the room's authored memory. Each tune and its contributor are server-saved; teammates see the same state. Keys 1–3 select landmarks, and standard Tab/Enter/Space work on the controls. Browser guests may tune only their own team's rooms; hosts spectate. Tuning fixes team membership for that round.
+Select one of three SVG landmarks, inspect the predicted phases, then tune it. Match all three displayed targets to recover the room's authored memory. Each tune and its contributor are server-saved; teammates see the same state. Keys 1–3 select landmarks, and standard Tab/Enter/Space work on the controls. Browser guests may tune only their own team's rooms; hosts spectate. Tuning fixes team membership for that round.
+
+New chambers have six relay rules: Taiga advances itself and the next landmark; Corrupted reverses itself and advances the next; Lunar advances itself and the previous; Fire advances itself and all higher-numbered landmarks; Frontier advances itself and reverses the next; Star Sea reverses itself and advances both others. Phases wrap through 1–3 in either direction. Targets are generated through legal moves, so every challenge is solvable. Stored original chambers retain their original rule until the next round. The expedition passport collects each recovered memory, with a six-horizon completion title when all six are solved.
 
 Chamber IDs combine room, team, domain and round. Progress survives refreshes and home changes; a new round clears room memories and gives chambers new round IDs. These optional activities do not spend experiments, earn theory-vote eligibility, or count toward the main encounter's two-team evidence requirement. **Exploring does not pause a running encounter**; its clock remains visible in the room.
 
@@ -79,6 +103,7 @@ This serves `public/` on loopback port 4173 and implements the same room API wit
 !cite crown 2 b
 !solve crown a
 !focus root
+!hint crown
 !bind amber circle 3
 ```
 
