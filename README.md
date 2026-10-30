@@ -30,6 +30,18 @@ Every member has one replaceable domain ballot for their own team. An untied lea
 
 Six compressed WebP environments were generated with the built-in image-generation tool. Exact prompts and source/final paths are recorded in `DOMAIN_ART.md`. The user's original guardian remains a separately credited asset.
 
+## Interactive domain rooms
+
+Choose **Enter [domain] room**, or enter a room from the domain explorer. Each team has six shared chambers with separate IDs and progress: **The Listening Grove**, **The Fracture Observatory**, **The Moonwell**, **The Ember Stair**, **The Threefold Crossing**, and **The Last-Light Anchorage**. The room atlas lets teammates visit any of their six chambers without changing the voted home.
+
+Select one of three SVG landmarks, then tune it. A tune advances that landmark and the next landmark through phases 1 → 2 → 3 → 1. Match all three displayed targets to recover the room's authored memory. Each tune and its contributor are server-saved; teammates see the same state. Keys 1–3 select landmarks, and standard Tab/Enter/Space work on the controls. Browser guests may tune only their own team's rooms; hosts spectate. Tuning fixes team membership for that round.
+
+Chamber IDs combine room, team, domain and round. Progress survives refreshes and home changes; a new round clears room memories and gives chambers new round IDs. These optional activities do not spend experiments, earn theory-vote eligibility, or count toward the main encounter's two-team evidence requirement. **Exploring does not pause a running encounter**; its clock remains visible in the room.
+
+**Copy room link** produces a viewer URL with room, suggested team and domain, without host credentials. After joining, the link opens that domain room. A saved viewer seat keeps its existing team; the link cannot transfer it or override Site access. Room links expire with the expedition.
+
+The grove layers the user's supplied forest image with new SVG landmarks. All rooms reuse the existing sandboxed guardian iframe. Opening a chamber suspends the covered WebGL scene; the chamber uses image/SVG/CSS layers, with reduced-motion and still-effects support, and adds no rendering framework. `CHAMBERS` in `public/chamber-engine.js` records authored place names, layouts and memories. The linked-dial mechanic has familiar puzzle precedents; no claim of unprecedented or exclusive mechanics is made.
+
 ## Local setup
 
 Requires Node.js **22.13 or newer**. The full-stack project uses the supported Sites Vinext/Cloudflare starter and D1. Browser gameplay assets are plain HTML/CSS/JavaScript.
@@ -61,6 +73,7 @@ This serves `public/` on loopback port 4173 and implements the same room API wit
 ```text
 !team crown
 !domain corrupted
+!tune 2
 !test crown blue circle 2
 !test crown 🔵 ⚪ 2️⃣
 !cite crown 2 b
@@ -72,6 +85,8 @@ This serves `public/` on loopback port 4173 and implements the same room API wit
 `!cite crown 2 b` claims that observation #2 contradicts Theory B at Crown. The engine checks the claim. PASS and FAIL tests both count as useful evidence.
 
 `!domain` votes for the relayed participant's own team home. Domain IDs: `taiga`, `corrupted`, `lunar`, `fire`, `frontier`, `star-sea`. A Twitch command cannot choose another team's home.
+
+`!tune 1`, `!tune 2` and `!tune 3` tune a landmark in that participant's **saved home** chamber. Browser visitors may visit other chambers through the atlas. Live Twitch validation of this command remains required.
 
 Eye names: crown/dusk/heart/dawn/root. Colours: red/blue/amber. Shapes: circle/triangle/square. Pulses: 1–3. Theories: a–d. Emoji alternatives: 🔴/🔵/🟡, ⚪/🔺/⬜, 1️⃣/2️⃣/3️⃣. Unrelated chat is ignored. Without an explicit eye, commands use that Twitch participant's focus, otherwise their team's home eye.
 

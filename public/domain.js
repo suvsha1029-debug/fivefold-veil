@@ -154,6 +154,8 @@ export class DomainScene {
     if (!enabled) this.draw();
   }
 
+  setChamberOpen(open) { this.chamberOpen=Boolean(open); this.schedule(); }
+
   setTheme(theme) {
     const id=domainId(theme),domain=getDomain(id);
     if(this.theme===id)return;
@@ -212,7 +214,7 @@ export class DomainScene {
 
   syncEmblem() {
     // Only public visual flags cross into the sandbox; never rules, tokens, or chat.
-    const paused = !this.enabled || document.hidden || !this.visible || ['paused','won','lost'].includes(this.status);
+    const paused = !this.enabled || document.hidden || (!this.visible&&!this.chamberOpen) || ['paused','won','lost'].includes(this.status);
     const message = JSON.stringify({ type: 'signal-lab:scene', paused, eyes: this.eyeStates, focus: this.selectedEye, hue:getDomain(this.theme).hue });
     if (message !== this.svgMessage) {
       this.svgMessage = message;
@@ -222,7 +224,7 @@ export class DomainScene {
 
   schedule() {
     this.syncEmblem();
-    const active = this.enabled && this.visible && !document.hidden && !['paused','won','lost'].includes(this.status);
+    const active = this.enabled && this.visible && !this.chamberOpen && !document.hidden && !['paused','won','lost'].includes(this.status);
     this.stage.dataset.visualActive = String(active);
     if (!active || !this.gl) {
       cancelAnimationFrame(this.frame); this.frame = 0; this.lastTick = null;

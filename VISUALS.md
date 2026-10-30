@@ -1,5 +1,7 @@
 # Fivefold Veil — visual integration
 
+The six domains now contain interactive rooms: landscape maps with three selectable vector landmarks, directed echo paths, a shared phase relay and a recovered-memory state. The room atlas shows progress in all six chambers for the viewed team. The original guardian iframe moves between investigation and chamber, then returns on close; it is not duplicated. The Taiga room includes the user's original pine/forest image as a foreground environment layer. Other landmarks are new code-authored SVGs. These are responsive 2D interactive scenes, not free-roaming 3D worlds. The existing WebGL arena stops scheduling frames while covered by a chamber.
+
 Team rooms now include six selectable homes with distinct backgrounds, WebGL atmospheres, guardian hues and responsive interface treatments:
 
 | Team domain | World and interface |

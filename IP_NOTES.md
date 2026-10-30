@@ -29,6 +29,8 @@ Quoted web searches for **“Fivefold Veil”** found no obvious exact-name prod
 
 Keep creation dates and source/adaptation history. Original ownership and contest timing are different questions: record any pre-existing personal assets accurately and ask the organizer if their reuse eligibility is unclear. Recheck provenance when adding assets or dependencies.
 
+Domain rooms add code-authored SVG landmarks, layouts, room names and short memory texts in `public/chambers.js` and `public/chamber-engine.js`. The Listening Grove reuses the supplied original forest image; the original guardian is reused through its existing sandbox. The linked-dial relay is an implementation of a familiar adjacent-control puzzle pattern, not a claim to invent linked-switch mechanics. No franchise room models, interface files, lore, sounds or textures were imported for these rooms.
+
 ## Copyright distinction
 
 The [U.S. Copyright Office's Circular 33](https://www.copyright.gov/circs/circ33.pdf) distinguishes an underlying idea, method, or system from its expressive implementation. Independently authored text, illustrations, and other expression can be protected even when the underlying method is not. Names and short titles are generally outside copyright protection, while trademark rights are separate. Thus, similar mechanics do not by themselves settle infringement, and changing mechanics does not authorize copying code, artwork, dialogue, or music. This limited U.S. overview does not resolve patents, trademark, contracts, other jurisdictions, or any specific infringement dispute.

@@ -1,7 +1,8 @@
 import { EmojiKeyboard, signalEmoji } from './emoji-keyboard.js';
 import { DomainScene } from './domain.js';
 import { TeamWorlds } from './team-worlds.js';
-import { getDomain } from './domains.js';
+import { DomainChambers } from './chambers.js';
+import { getDomain, validDomain } from './domains.js';
 import { TwitchChat, beginTwitchLogin, consumeTwitchLogin, callbackUrl, savedClientId } from './twitch.js';
 
 const $=id=>document.getElementById(id);
@@ -10,10 +11,12 @@ const ids=['crown','dusk','heart','dawn','root'];
 const avatars=['🦊','🦉','🐸','🐙','🦋','🐼','🐺','🐱'];
 const HOST_KEY='fivefold-host-rooms-v1',GUEST_KEY='fivefold-viewer-seats-v1';
 let session=null,state=null,selectedEye='heart',avatar='🦊',busy=false,polling=false,receivedAt=0,toastTimer,proofSignature='',theorySignature='',activitySignature='',connection={state:'disconnected'};
+let pendingChamber=null;
 let oauth=null;try{oauth=consumeTwitchLogin();}catch(error){setTimeout(()=>toast(error.message,true),0);}
 const scene=new DomainScene();
 const keyboard=new EmojiKeyboard($('emoji-keyboard'),{onChange:renderKeyboard,onSubmit:()=>sendSignal()});
 const worlds=new TeamWorlds({scene,getState:()=>state,getEye:()=>selectedEye,isBusy:()=>busy,vote:domain=>action('domain',{domain}),toast});
+const chambers=new DomainChambers({worlds,scene,getState:()=>state,isBusy:()=>busy,tune:(domain,node)=>action('chamber',{domain,node}),toast});
 const requestId=()=>crypto.randomUUID();
 function toast(message,error=false){clearTimeout(toastTimer);$('toast').textContent=message;$('toast').classList.toggle('error',error);$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,6000);}
 function readStore(storage,key){try{return JSON.parse(storage.getItem(key)||'{}');}catch{return {};}}
@@ -33,12 +36,12 @@ function applyState(next){
   $('room-sync').replaceChildren(node('span','sync-dot'),document.createTextNode('Synced · updates every 3s'));
   $('room-banner').hidden=true;render();
 }
-function enter(value,next){session=value;state=null;remember(value);const url=new URL(location.pathname,location.origin);url.searchParams.set('room',value.code);if(value.role==='host')url.searchParams.set('view','host');history.replaceState(null,'',url.pathname+url.search);$('lobby').hidden=true;$('room-view').hidden=false;$('lobby-button').hidden=false;applyState(next);}
+function enter(value,next){session=value;state=null;remember(value);const url=new URL(location.pathname,location.origin);url.searchParams.set('room',value.code);if(value.role==='host')url.searchParams.set('view','host');history.replaceState(null,'',url.pathname+url.search);$('lobby').hidden=true;$('room-view').hidden=false;$('lobby-button').hidden=false;applyState(next);if(pendingChamber){chambers.open(pendingChamber);pendingChamber=null;}}
 async function action(path,body){
-  if(!session||busy)return null;busy=true;renderKeyboard();
+  if(!session||busy)return null;busy=true;renderKeyboard();chambers.render();
   try{const response=await api(`/${session.code}/${path}`,{method:'POST',body:{...body,requestId:requestId()}});applyState(response.state);return response.result;}
-  catch(error){toast(error.message,true);return null;}
-  finally{busy=false;renderKeyboard();worlds.render();}
+  catch(error){toast(error.message,true);chambers.reportError(error.message);return null;}
+  finally{busy=false;renderKeyboard();worlds.render();chambers.render();}
 }
 async function refresh(){if(!session||polling||busy)return;polling=true;try{applyState(await api(`/${session.code}`));}catch(error){$('room-sync').textContent='Connection interrupted';$('room-banner').textContent=`${error.message} Your seat is kept; reconnecting…`;$('room-banner').hidden=false;}finally{polling=false;}}
 
@@ -92,7 +95,7 @@ $('host-start').addEventListener('click',()=>action('control',{type:state.game.s
 $('host-reset').addEventListener('click',async()=>{const result=await action('control',{type:'reset'});if(result)toast('New round. Room, member and team IDs stay the same.');});
 $('switch-team-button').addEventListener('click',async()=>{const result=await action('team',{team:$('switch-team-select').value});if(result){selectedEye=state.me.team;render();toast('Your team has changed.');}});
 
-function renderClock(){if(!state)return;const g=state.game,remaining=Math.max(0,g.remainingMs-(g.status==='running'?Date.now()-receivedAt:0)),seconds=Math.ceil(remaining/1000),text=`${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;scene.updateClock(remaining,g.durationMs,text);}
+function renderClock(){if(!state)return;const g=state.game,remaining=Math.max(0,g.remainingMs-(g.status==='running'?Date.now()-receivedAt:0)),seconds=Math.ceil(remaining/1000),text=`${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;scene.updateClock(remaining,g.durationMs,text);$('chamber-time').textContent=`${text} · ${g.status==='running'?'ENCOUNTER RUNNING':g.status==='paused'?'CLOCK HELD':g.status==='idle'?'AWAITING HOST':'ENCOUNTER ENDED'}`;}
 function render(){
   if(!state)return;const g=state.game,me=state.me,host=state.isHost,eye=g.eyes.find(e=>e.id===selectedEye),ended=['won','lost'].includes(g.status);
   $('expedition-title').textContent=state.title;$('room-code').textContent=state.code;$('room-eyebrow').textContent=`EXPEDITION ROOM / ROUND ${state.round}`;
@@ -103,7 +106,7 @@ function render(){
   $('my-identity').replaceChildren(node('div','',me?`MEMBER / ${me.id}`:'HOST / PRIVATE CONTROL KEY'),node('div','',team?`TEAM / ${team.id}`:`ROOM / ${state.code}`),node('div','',me?(me.source==='browser'?'Browser guest · not Twitch-verified':'Twitch host relay'):'Share the viewer link, never your host key.'));
   $('team-instruction').textContent=me?`Your team: ${team.name}. Help investigate any of the five eyes. ${me.locked?'Your team is fixed for this round.':'You may switch before contributing.'}`:'Teams can help across the constellation. At least two teams must contribute before the final binding.';
   $('switch-team').hidden=!me||me.locked;if(me&&!me.locked&&document.activeElement!==$('switch-team-select'))$('switch-team-select').value=me.team;
-  worlds.render();scene.setProgress(g.eyes,selectedEye,g.phase);scene.setState(g.status);renderClock();
+  worlds.render();scene.setProgress(g.eyes,selectedEye,g.phase);scene.setState(g.status);renderClock();chambers.render();
   $('room-eye-title').textContent=g.phase==='binding'?'The fivefold binding':`${eye.name} / domain encounter`;$('room-phase').textContent=ended?'ENCOUNTER CLOSED':g.status==='paused'?'TIME HELD':g.phase.toUpperCase();
   const last=eye.experiments.at(-1);$('room-output-symbol').textContent=g.status==='won'?'✧':last?(last.accepted?'✓':'×'):'?';$('room-output-text').textContent=g.status==='won'?'VEIL OPENED':last?(last.accepted?'ACCEPTED':'REJECTED'):'AWAITING SIGNAL';$('machine-stage').dataset.result=g.status==='won'?'pass':last?(last.accepted?'pass':'fail'):'idle';
   renderTeams();renderKeyboard();renderTheories();renderProof();
@@ -114,14 +117,14 @@ function render(){
   $('room-outcome').hidden=!ended;if(ended){$('room-outcome-title').textContent=g.status==='won'?'Your teams opened the veil.':g.remainingMs===0?'The veil has closed.':'The veil has fractured.';$('room-outcome-text').textContent=g.status==='won'?`${signalEmoji(g.finalSignal)} · ${g.finalSignal.color} ${g.finalSignal.shape} ${g.finalSignal.pulses}. ${g.participants} evidence contributors across ${state.activeTeams} teams.`:`${g.endReason} ${g.sealedCount}/5 discoveries secured. The host can begin a new round with the same room IDs.`;}
 }
 
-$('effects-button').addEventListener('click',()=>scene.setEnabled(!scene.enabled));
+$('effects-button').addEventListener('click',()=>{scene.setEnabled(!scene.enabled);chambers.render();});
 $('guide-button').addEventListener('click',()=>$('room-guide').showModal());
 for(const button of document.querySelectorAll('[data-close]'))button.addEventListener('click',()=>$(button.dataset.close).close());
 $('invite-button').addEventListener('click',()=>{$('invite-url').value=joinUrl(state.code);$('invite-dialog').showModal();});
 $('copy-invite').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('invite-url').value);toast('Viewer link copied. It contains no host credentials.');}catch{$('invite-url').select();toast('Select and copy the viewer link above.');}});
 
 const twitch=new TwitchChat({onMessage:message=>{
-  if(!session||!state?.isHost||!/^!(team|domain|test|solve|cite|bind|focus)\s/i.test(message.text))return;
+  if(!session||!state?.isHost||!/^!(team|domain|tune|test|solve|cite|bind|focus)\s/i.test(message.text))return;
   api(`/${session.code}/twitch`,{method:'POST',body:{text:message.text,userId:message.id,name:message.name,channel:connection.channel,requestId:requestId()}}).then(response=>{applyState(response.state);if(response.result?.kind==='test')scene.pulse(response.result.experiment.accepted);}).catch(error=>toast(error.message,true));
 },onStatus:next=>{
   connection=next;$('room-twitch-status').textContent=next.message||next.state;$('room-twitch-form').hidden=next.state==='connected';$('room-twitch-disconnect').hidden=next.state!=='connected';
@@ -135,10 +138,12 @@ $('room-twitch-form').addEventListener('submit',event=>{event.preventDefault();t
 $('room-twitch-disconnect').addEventListener('click',()=>{twitch.disconnect(false);connection={state:'disconnected'};$('room-twitch-form').hidden=false;$('room-twitch-disconnect').hidden=true;$('room-twitch-status').textContent='Disconnected. Browser teams can continue.';render();});
 
 setInterval(()=>{if(!document.hidden)refresh();},3000);setInterval(renderClock,250);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
+document.addEventListener('visibilitychange',()=>{chambers.render();if(!document.hidden)refresh();});
 window.addEventListener('beforeunload',()=>{scene.destroy();twitch.disconnect(false);});
 async function initialize(){
   const query=new URL(location.href).searchParams;let code=(query.get('room')||'').toUpperCase(),role=query.get('view')==='host'?'host':'member';
+  if(ids.includes(query.get('team')))$('join-team').value=query.get('team');
+  if(query.get('chamber')==='1'&&validDomain(query.get('domain')))pendingChamber=query.get('domain');
   if(oauth&&!code){code=readStore(localStorage,HOST_KEY).last||'';role='host';}
   if(code){$('join-code').value=code;const saved=lookup(code,role);if(saved){try{const next=await api(`/${code}`,{token:saved.token});if((role==='host'&&next.isHost)||(role==='member'&&next.me))enter(saved,next);}catch(error){toast(error.message,true);}}}
   if(oauth){if(session?.role==='host'){twitch.connect(oauth.token,oauth.clientId);oauth=null;}else{toast('Open your saved host room before reconnecting Twitch.',true);oauth=null;}}
