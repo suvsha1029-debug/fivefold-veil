@@ -89,6 +89,12 @@ This serves `public/` on loopback port 4173 and implements the same room API wit
 
 ## Twitch host relay
 
+### Witness Seat and discovery replay
+
+The host can enable **The Witness Seat** in a room. After a correct seal, useful experiments and pre-seal evidence citations earn one optional spotlight message per contributor per round. Browser viewers submit through the room; Twitch viewers use `!spotlight your message` (visible in Twitch chat). The in-game queue is private to the host and requesting browser viewer until host approval. Requests expire in five minutes; approved messages display for 60 seconds. The host can dismiss messages or disable the feature. Discovery archives show experiments, eliminated theories and contribution credit, and hosts can display a recap in Audience view for 20 seconds. See [feature direction](FEATURE_DIRECTION.md) for constraints and future ideas.
+
+The team-room Twitch adapter also subscribes to chat deletion/clear events with the existing `user:read:chat` scope. These remove matching spotlight text; the host must remain connected for moderation to synchronize. Browser guests are not linked to Twitch identities. Live broadcast validation remains required.
+
 1. Verify the broadcaster's Twitch email, enable 2FA, and register a Public application in the [Developer Console](https://dev.twitch.tv/console/apps).
 2. In the team's host view, open **Connect Twitch**. Add its exact displayed redirect URL to the Twitch app. Team-room and solo-rehearsal paths have different callback URLs.
 3. Paste the public Client ID, authorize as the account owning the channel, and wait for the connected channel name.

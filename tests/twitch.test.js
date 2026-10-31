@@ -11,10 +11,11 @@ class MockSocket {
 const welcome = (id = 'session-one') => ({ metadata: { message_type: 'session_welcome' }, payload: { session: { id, keepalive_timeout_seconds: 30 } } });
 const notification = (messageId, broadcaster = '123') => ({ metadata: { message_type: 'notification', message_id: messageId }, payload: { subscription: { type: 'channel.chat.message' }, event: { broadcaster_user_id: broadcaster, chatter_user_id: '456', chatter_user_name: '<Researcher>', message_id: messageId, message: { text: '!test blue circle 2' } } } });
 
-function fixture({ scope = true, client = 'public-client', subscribeOk = true } = {}) {
+function fixture({ scope = true, client = 'public-client', subscribeOk = true, onModeration = null } = {}) {
   MockSocket.sockets = [];
   const requests = [], statuses = [], messages = [];
   const chat = new TwitchChat({
+    onModeration,
     onStatus: value => statuses.push(value), onMessage: value => messages.push(value), WebSocketImpl: MockSocket,
     fetchImpl: async (url, init) => {
       requests.push({ url, init });
@@ -41,6 +42,18 @@ test('uses broadcaster identity, read-only chat permission, and deduplicates del
     assert.equal(f.messages.length, 1);
     assert.equal(f.messages[0].name, '<Researcher>');
   } finally { f.chat.disconnect(false); }
+});
+
+test('spotlight integrations subscribe to all deletion events and forward matching channel provenance',async()=>{
+  const events=[],f=fixture({onModeration:e=>events.push(e)});
+  try{
+    await f.chat.connect('test-token','public-client');const socket=MockSocket.sockets[0];await socket.receive(welcome());
+    assert.deepEqual(f.requests.filter(r=>r.url.includes('/subscriptions')).map(r=>JSON.parse(r.init.body).type),['channel.chat.message','channel.chat.message_delete','channel.chat.clear_user_messages','channel.chat.clear']);
+    for(const type of ['channel.chat.message_delete','channel.chat.clear_user_messages','channel.chat.clear'])await socket.receive({metadata:{message_type:'notification',message_timestamp:'2026-10-31T00:00:00Z'},payload:{subscription:{type},event:{broadcaster_user_id:'123',target_user_id:'456',message_id:'m1'}}});
+    assert.deepEqual(events.map(e=>e.type),['delete','user','clear']);assert.equal(events[0].messageId,'m1');assert.equal(events[1].userId,'456');
+    await socket.receive({metadata:{message_type:'notification'},payload:{subscription:{type:'channel.chat.clear'},event:{broadcaster_user_id:'999'}}});assert.equal(events.length,3);
+    await socket.receive(notification('m2'));assert.equal(f.messages[0].messageId,'m2');assert.ok(Number.isFinite(f.messages[0].sentAt));
+  }finally{f.chat.disconnect(false);}
 });
 
 test('rejects tokens for a different app or missing chat permission', async () => {

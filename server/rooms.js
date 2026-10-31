@@ -1,6 +1,7 @@
 import { VeilGame, EYES, parseCommand } from '../public/engine.js';
 import { getDomain, domainId, validDomain, DEFAULT_TEAM_DOMAINS, teamDomainState, settleTeamDomain } from '../public/domains.js';
 import { teamChambers, tuneChamber } from '../public/chamber-engine.js';
+import { recordDiscovery, resetWitness, witnessState, witnessAction, submitWitness, moderateWitness } from './witness.js';
 
 const TTL=24*60*60*1000;
 const AVATARS=['🦊','🦉','🐸','🐙','🦋','🐼','🐺','🐱'];
@@ -95,7 +96,7 @@ function publicState(room,game,auth,now){
     theme:domainId(room.theme),teams,activeTeams:teams.filter(t=>t.contributors>0).length,
     members:room.members.map(m=>({id:m.id,name:m.name,avatar:m.avatar,team:m.team,source:m.source,contributed:game.participants.has(m.id)})),
     me:auth.member?{id:auth.member.id,name:auth.member.name,avatar:auth.member.avatar,team:auth.member.team,source:auth.member.source,locked:auth.member.lockedRound===room.round,domainVote:room.domainVotes?.[auth.member.id]?.team===auth.member.team?room.domainVotes[auth.member.id].domain:null,eligible:game.eyes.filter(e=>game.eligible(e,auth.member.id)).map(e=>e.id),votes:Object.fromEntries(game.eyes.map(e=>[e.id,e.votes.get(auth.member.id)?.optionId||null]))}:null,
-    isHost:auth.host,game:snapshot,activity:room.activity};
+    witness:witnessState(room,auth,now),isHost:auth.host,game:snapshot,activity:room.activity};
 }
 
 export class RoomApi {
@@ -144,7 +145,12 @@ export class RoomApi {
         const previous=room.requests.find(r=>r.id===requestId&&r.by===actorKey);
         if(previous)return json({result:previous.result,state:publicState(room,game,auth,now)});
         let result;
-        if(action==='decide'){
+        if(action==='witness'){
+          result=witnessAction(room,auth,body,now);
+        } else if(action==='witness-moderation'){
+          if(!auth.host)throw fail('Only the connected host can relay moderation.',403);
+          result=moderateWitness(room,body,now);
+        } else if(action==='decide'){
           result=communityDecision(room,game,auth.member,body.type,body.eyeId,now);
         } else if(action==='control'){
           if(!auth.host)throw fail('Only the host can change the encounter.',403);
@@ -158,6 +164,7 @@ export class RoomApi {
             result=game.commitBinding(now,auth.host&&room.controlMode==='host'?body.signal||null:null);
           }
           else if(type==='reset'){
+            resetWitness(room);
             const fresh=new VeilGame({seed:this.seed(),durationMs:game.durationMs,definition:game.definition});room.round++;room.activity=[];room.chambers={};room.twitchChannel=null;room.hint=null;room.hintRequests=[];room.pendingTests=[];for(const member of room.members)delete member.hintRequestedAt;saveGame(room,fresh,now);
             result={kind:'reset',message:'New round. Your room and team IDs stay the same.'};
             room.requests=[{id:requestId,by:actorKey,result}];if(await this.store.save(code,room,row.version))return json({result,state:publicState(room,fresh,auth,now)});continue;
@@ -225,10 +232,12 @@ export class RoomApi {
             const tuneMatch=/^!tune ([123])$/i.exec(String(body.text||'').trim());
             const hintMatch=/^!hint (crown|dusk|heart|dawn|root)$/i.exec(String(body.text||'').trim());
             const sealMatch=/^!seal (crown|dusk|heart|dawn|root)$/i.exec(String(body.text||'').trim()),bindMatch=/^!confirmbind$/i.test(String(body.text||'').trim());
-            const parsed=parseCommand(body.text);if(!parsed&&!teamMatch&&!domainMatch&&!tuneMatch&&!hintMatch&&!sealMatch&&!bindMatch)return json({result:{kind:'ignored'},state:publicState(room,game,auth,now)});
+            const spotlightMatch=/^!spotlight\s+([\s\S]+)$/i.exec(String(body.text||'').trim());
+            const parsed=parseCommand(body.text);if(!parsed&&!teamMatch&&!domainMatch&&!tuneMatch&&!hintMatch&&!sealMatch&&!bindMatch&&!spotlightMatch)return json({result:{kind:'ignored'},state:publicState(room,game,auth,now)});
             const id=`T-${body.userId}`;member=room.members.find(m=>m.id===id);
             if(!member){if(room.members.length>=200)throw fail('The room is full.',409);member={id,name:cleanName(body.name)||'Twitch viewer',avatar:'🎮',team:teamMatch?.[1].toLowerCase()||parsed?.eyeId||'heart',source:'twitch',lockedRound:0};room.members.push(member);}
             room.twitchChannel=body.channel;
+            if(spotlightMatch)result=submitWitness(room,member,spotlightMatch[1],now,{messageId:body.messageId,sentAt:body.sentAt});
             if(teamMatch){if(member.lockedRound===room.round)throw fail('Your team is fixed for this round.',409);const previousTeam=member.team;member.team=teamMatch[1].toLowerCase();if(room.domainVotes)delete room.domainVotes[member.id];settleTeamDomain(room,previousTeam);settleTeamDomain(room,member.team);result={kind:'team',message:`Joined ${member.team}.`};}
             if(domainMatch){const domain=domainMatch[1].toLowerCase();room.domainVotes||={};room.domainVotes[member.id]={team:member.team,domain};const settled=settleTeamDomain(room,member.team);result={kind:'domainVote',message:`Domain vote recorded. ${member.team} stays in ${getDomain(settled.domain).name}.`};}
             if(tuneMatch){if(now-(member.chamberAt??-Infinity)<300)throw fail('Let that echo settle, then tune again.',429);result=tuneChamber(room,member,teamDomainState(room,member.team).domain,Number(tuneMatch[1])-1,now);member.chamberAt=now;member.lockedRound=room.round;}
@@ -242,6 +251,7 @@ export class RoomApi {
           if(!['error','ignored'].includes(result.kind))addActivity(room,member,result);
         }else throw fail('Unknown room action.',404);
         if(result.kind==='error')throw fail(result.message,409);
+        if(result.kind==='sealed')recordDiscovery(room,game,result.eyeId,now);
         if(['test','sealed','wrong'].includes(result.kind)){
           if(room.hint?.eyeId===result.eyeId)room.hint=null;
           if(result.kind==='sealed')room.hintRequests=(room.hintRequests||[]).filter(r=>r.eyeId!==result.eyeId);

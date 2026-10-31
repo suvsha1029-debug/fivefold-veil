@@ -5,6 +5,7 @@ import { DomainChambers } from './chambers.js';
 import { getDomain, validDomain } from './domains.js';
 import { roomGuidance } from './room-guidance.js';
 import { HostDesk } from './host-desk.js';
+import { WitnessSeat } from './witness-seat.js';
 import { TwitchChat, beginTwitchLogin, consumeTwitchLogin, callbackUrl, savedClientId } from './twitch.js';
 
 const $=id=>document.getElementById(id);
@@ -22,6 +23,7 @@ const keyboard=new EmojiKeyboard($('emoji-keyboard'),{onChange:renderKeyboard,on
 const worlds=new TeamWorlds({scene,getState:()=>state,getEye:()=>selectedEye,isBusy:()=>busy,vote:domain=>action('domain',{domain}),toast});
 const chambers=new DomainChambers({worlds,scene,getState:()=>state,isBusy:()=>busy,tune:(domain,node)=>action('chamber',{domain,node}),toast});
 const hostDesk=new HostDesk({getState:()=>state,isBusy:()=>busy,action,toast});
+const witness=new WitnessSeat({getState:()=>state,isBusy:()=>busy,action,toast});
 const requestId=()=>crypto.randomUUID();
 function toast(message,error=false){clearTimeout(toastTimer);$('toast').textContent=message;$('toast').classList.toggle('error',error);$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,6000);}
 function readStore(storage,key){try{return JSON.parse(storage.getItem(key)||'{}');}catch{return {};}}
@@ -43,7 +45,7 @@ function applyState(next){
 }
 function enter(value,next){session=value;state=null;if(value.role!=='spectator')remember(value);audienceView=value.role==='spectator';const url=new URL(location.pathname,location.origin);url.searchParams.set('room',value.code);if(value.role==='host')url.searchParams.set('view','host');if(value.role==='spectator')url.searchParams.set('view','watch');history.replaceState(null,'',url.pathname+url.search);$('lobby').hidden=true;$('room-view').hidden=false;$('lobby-button').hidden=false;applyState(next);if(pendingChamber&&value.role!=='spectator'){chambers.open(pendingChamber);pendingChamber=null;}}
 async function action(path,body){
-  if(!session||busy)return null;busy=true;renderKeyboard();chambers.render();hostDesk.render();
+  if(!session||busy)return null;busy=true;renderKeyboard();chambers.render();hostDesk.render();witness.render();
   try{const response=await api(`/${session.code}/${path}`,{method:'POST',body:{...body,requestId:requestId()}});applyState(response.state);return response.result;}
   catch(error){toast(error.message,true);chambers.reportError(error.message);return null;}
   finally{busy=false;render();}
@@ -106,7 +108,7 @@ $('host-start').addEventListener('click',()=>action('control',{type:state.game.s
 $('host-reset').addEventListener('click',async()=>{const result=await action('control',{type:'reset'});if(result)toast('New round. Room, member and team IDs stay the same.');});
 $('switch-team-button').addEventListener('click',async()=>{const result=await action('team',{team:$('switch-team-select').value});if(result){selectedEye=state.me.team;render();toast('Your team has changed.');}});
 
-function renderClock(){if(!state)return;const g=state.game,remaining=Math.max(0,g.remainingMs-(g.status==='running'?Date.now()-receivedAt:0)),seconds=Math.ceil(remaining/1000),text=`${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;scene.updateClock(remaining,g.durationMs,text);$('chamber-time').textContent=`${text} · ${g.status==='running'?'ENCOUNTER RUNNING':g.status==='paused'?'CLOCK HELD':g.status==='idle'?'AWAITING HOST':'ENCOUNTER ENDED'}`;}
+function renderClock(){if(!state)return;witness.tick(state.serverNow+Date.now()-receivedAt,Date.now()-receivedAt>10000);const g=state.game,remaining=Math.max(0,g.remainingMs-(g.status==='running'?Date.now()-receivedAt:0)),seconds=Math.ceil(remaining/1000),text=`${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;scene.updateClock(remaining,g.durationMs,text);$('chamber-time').textContent=`${text} · ${g.status==='running'?'ENCOUNTER RUNNING':g.status==='paused'?'CLOCK HELD':g.status==='idle'?'AWAITING HOST':'ENCOUNTER ENDED'}`;}
 function renderGuidance(){
   const g=state.game,guide=roomGuidance(state,selectedEye),eye=g.eyes.find(e=>e.id===selectedEye);
   $('next-step-title').textContent=guide.title;$('next-step-detail').textContent=guide.detail;
@@ -164,7 +166,7 @@ function render(){
   worlds.render();scene.setProgress(g.eyes,selectedEye,g.phase);scene.setState(g.status);renderClock();chambers.render();
   $('room-eye-title').textContent=g.phase==='binding'?'The fivefold binding':`${eye.name} / domain encounter`;$('room-phase').textContent=ended?'ENCOUNTER CLOSED':g.status==='paused'?'TIME HELD':g.phase.toUpperCase();
   const last=eye.experiments.at(-1);$('room-output-symbol').textContent=g.status==='won'?'✧':last?(last.accepted?'✓':'×'):'?';$('room-output-text').textContent=g.status==='won'?'VEIL OPENED':last?(last.accepted?'ACCEPTED':'REJECTED'):'AWAITING SIGNAL';$('machine-stage').dataset.result=g.status==='won'?'pass':last?(last.accepted?'pass':'fail'):'idle';
-  renderTeams();renderKeyboard();renderTheories();renderProof();renderGuidance();hostDesk.render();
+  renderTeams();renderKeyboard();renderTheories();renderProof();renderGuidance();hostDesk.render();witness.render();
   let roster=$('member-roster');if(!roster){roster=node('div','member-roster');roster.id='member-roster';document.querySelector('.crew-identity').append(roster);}const members=state.members.filter(m=>m.team===(me?.team||selectedEye));roster.replaceChildren(node('span','','TEAM ROSTER'),...members.slice(0,8).map(m=>{const item=node('p','',`${m.avatar} ${m.name}`);item.append(node('small','',m.id));return item;}));if(!members.length)roster.append(node('p','','No one has joined this team yet.'));
   $('journal-count').textContent=`${g.experiments.length}/30 EXPERIMENTS`;$('room-journal-empty').hidden=!!g.experiments.length;$('room-journal-table').hidden=!g.experiments.length;
   $('room-evidence').replaceChildren(...g.experiments.toReversed().map(e=>{const row=node('tr');row.append(node('td','',`${e.sequence} / ${e.eyeId}`),node('td','',signalEmoji(e)),node('td','',e.name),node('td',`result-tag${e.accepted?'':' fail'}`,e.accepted?'✓ PASS':'× FAIL'));return row;}));
@@ -179,8 +181,11 @@ $('invite-button').addEventListener('click',()=>{$('invite-url').value=joinUrl(s
 $('copy-invite').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('invite-url').value);toast('Viewer link copied. It contains no host credentials.');}catch{$('invite-url').select();toast('Select and copy the viewer link above.');}});
 
 const twitch=new TwitchChat({onMessage:message=>{
-  if(!session||!state?.isHost||!(/^!(team|domain|tune|test|solve|cite|bind|focus|hint|seal)\s/i.test(message.text)||/^!confirmbind$/i.test(message.text.trim())))return;
-  api(`/${session.code}/twitch`,{method:'POST',body:{text:message.text,userId:message.id,name:message.name,channel:connection.channel,requestId:requestId()}}).then(response=>{applyState(response.state);if(response.result?.kind==='test')scene.pulse(response.result.experiment.accepted);}).catch(error=>toast(error.message,true));
+  if(!session||!state?.isHost||!(/^!(team|domain|tune|test|solve|cite|bind|focus|hint|seal|spotlight)\s/i.test(message.text)||/^!confirmbind$/i.test(message.text.trim())))return;
+  api(`/${session.code}/twitch`,{method:'POST',body:{text:message.text,userId:message.id,name:message.name,messageId:message.messageId,sentAt:message.sentAt,channel:connection.channel,requestId:requestId()}}).then(response=>{applyState(response.state);if(response.result?.kind==='test')scene.pulse(response.result.experiment.accepted);}).catch(error=>toast(error.message,true));
+},onModeration:event=>{
+  if(!session||!state?.isHost)return;
+  api(`/${session.code}/witness-moderation`,{method:'POST',body:{...event,requestId:requestId()}}).then(response=>applyState(response.state)).catch(()=>{toast('Chat moderation could not sync. Turning off spotlights; reconnect before using them.',true);action('witness',{type:'enable',enabled:false});});
 },onStatus:next=>{
   connection=next;$('room-twitch-status').textContent=next.message||next.state;$('room-twitch-form').hidden=next.state==='connected';$('room-twitch-disconnect').hidden=next.state!=='connected';
   if(next.state==='connected'){toast(`Twitch connected: @${next.channel}. Chat may choose teams with !team crown.`);if($('room-twitch-dialog').open)$('room-twitch-dialog').close();}

@@ -51,9 +51,10 @@ export class TwitchChat {
   #retries = 0;
   #generation = 0;
 
-  constructor({ onStatus, onMessage, fetchImpl = globalThis.fetch.bind(globalThis), WebSocketImpl = globalThis.WebSocket }) {
+  constructor({ onStatus, onMessage, onModeration = null, fetchImpl = globalThis.fetch.bind(globalThis), WebSocketImpl = globalThis.WebSocket }) {
     this.onStatus = onStatus;
     this.onMessage = onMessage;
+    this.onModeration = onModeration;
     this.fetch = fetchImpl;
     this.Socket = WebSocketImpl;
   }
@@ -128,7 +129,10 @@ export class TwitchChat {
         if (!id || this.#seen.has(id)) return;
         this.#seen.add(id);
         if (this.#seen.size > 500) this.#seen.delete(this.#seen.values().next().value);
-        this.onMessage({ text: chat.message.text, id: chat.chatter_user_id, name: chat.chatter_user_name || 'Researcher' });
+        this.onMessage({ text: chat.message.text, id: chat.chatter_user_id, name: chat.chatter_user_name || 'Researcher', messageId:id, sentAt:Date.parse(data.metadata.message_timestamp)||Date.now() });
+      } else if(type==='notification'&&this.onModeration){
+        const kinds={'channel.chat.message_delete':'delete','channel.chat.clear_user_messages':'user','channel.chat.clear':'clear'},kind=kinds[data.payload?.subscription?.type],event=data.payload?.event;
+        if(kind&&event?.broadcaster_user_id===this.#user?.user_id)this.onModeration({type:kind,messageId:event.message_id,userId:event.target_user_id,at:Date.parse(data.metadata.message_timestamp)||Date.now()});
       }
     };
     socket.onclose = () => {
@@ -147,12 +151,15 @@ export class TwitchChat {
   }
 
   async #subscribe(sessionId) {
+    const types=['channel.chat.message',...(this.onModeration?['channel.chat.message_delete','channel.chat.clear_user_messages','channel.chat.clear']:[])];
+    for(const type of types){
     const res = await this.fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + this.#token, 'Client-Id': this.#clientId, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'channel.chat.message', version: '1', condition: { broadcaster_user_id: this.#user.user_id, user_id: this.#user.user_id }, transport: { method: 'websocket', session_id: sessionId } }),
+      body: JSON.stringify({ type, version: '1', condition: { broadcaster_user_id: this.#user.user_id, user_id: this.#user.user_id }, transport: { method: 'websocket', session_id: sessionId } }),
     });
     if (!res.ok) throw new Error(res.status === 401 || res.status === 403 ? 'Twitch could not authorize chat access. Reconnect with the account that owns the channel.' : 'Twitch could not start the chat subscription. Please reconnect.');
+    }
   }
 
   #retry() {
