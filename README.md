@@ -128,9 +128,9 @@ The host can enable **The Witness Seat** in a room. After a correct seal, useful
 
 The team-room Twitch adapter also subscribes to chat deletion/clear events with the existing `user:read:chat` scope. These remove matching spotlight text; the host must remain connected for moderation to synchronize. Browser guests are not linked to Twitch identities. Live broadcast validation remains required.
 
-1. Verify the broadcaster's Twitch email, enable 2FA, and register a Public application in the [Developer Console](https://dev.twitch.tv/console/apps).
+1. Verify the broadcaster's Twitch email, enable 2FA, and register a Confidential application in the [Developer Console](https://dev.twitch.tv/console/apps). The current browser adapter uses implicit authorization. Twitch documents Public clients as device-code-only. This adapter takes only the Client ID and never asks for the client secret. See [Twitch OAuth flows](https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/).
 2. In the team's host view, open **Connect Twitch**. Add its exact displayed redirect URL to the Twitch app. Team-room and solo-rehearsal paths have different callback URLs.
-3. Paste the public Client ID, authorize as the account owning the channel, and wait for the connected channel name.
+3. Paste the Client ID only, authorize as the account owning the channel, and wait for the connected channel name.
 4. Start/resume the encounter. The host's browser validates Twitch identity/scope and relays recognized commands to its room using the private host credential. Twitch access tokens remain in browser memory; refreshing requires reconnecting.
 
 ```text
