@@ -2,6 +2,39 @@
 
 **Five discoveries. One shared signal.** A cooperative browser/Twitch deduction game built with Codex under the user's creative direction, using the user's original guardian and forest artwork.
 
+## Clone and run
+
+The complete project source, artwork, server, database schema and tests live in the private GitHub repository [suvsha1029-debug/fivefold-veil](https://github.com/suvsha1029-debug/fivefold-veil).
+
+With Node.js 22.13 or newer installed, clone the repository and start the local room server. This lightweight server uses Node's built-in modules and needs no package installation.
+
+```sh
+git clone https://github.com/suvsha1029-debug/fivefold-veil.git
+cd fivefold-veil
+node server.mjs
+```
+
+Open `http://localhost:4173/teams`. Room data is stored locally under `.openai/local/rehearsal/`, which Git ignores. The full framework build and D1 preview are described under **Local setup** below.
+
+To check the project after changing it, install the pinned dependencies and run the checks.
+
+```sh
+npm ci
+npm test
+npm run check
+npm run build
+```
+
+Commit and push future changes from this directory.
+
+```sh
+git add <changed-files>
+git commit -m "Describe the change"
+git push
+```
+
+GitHub stores the project source and history. Publishing the existing ChatGPT Site uses the separate Sites publishing workflow. GitHub pushes alone do not deploy that Site. The repository's `.openai/hosting.json` retains the existing Site identity, and each developer still needs their own hosting access to publish there.
+
 ## Team rooms
 
 Open **Enter team rooms** on the home page, or `/teams`. The host creates an expedition; viewers follow an invite or enter a seven-character code and a display name. Team and emblem choices are optional: automatic placement balances browser seats across the five teams. Signals use an accessible emoji keyboard.
