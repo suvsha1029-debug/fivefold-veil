@@ -10,14 +10,14 @@ body.sigil-ui::before{background:linear-gradient(110deg,#101214e8,#101214b8),var
 .sigil-atmosphere{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0;contain:strict}
 .sigil-map-dust{position:absolute;inset:0;pointer-events:none;z-index:1;overflow:hidden;contain:strict}
 #chamber-dialog:not([open]) .sigil-mote{animation-play-state:paused}
-.ambient-sigil{position:absolute;display:block;width:min(56vw,740px);aspect-ratio:1;background:url('assets/sigils/star-sea.png') center/contain no-repeat;opacity:.075}
+.ambient-sigil{position:absolute;display:block;width:min(56vw,740px);aspect-ratio:1;background:url('assets/sigils/star-sea.webp') center/contain no-repeat;opacity:.075}
 .ambient-sigil-north{right:-19%;top:-16%;transform:rotate(12deg)}
-.ambient-sigil-south{left:-21%;bottom:-22%;background-image:url('assets/sigils/frontier.png');transform:rotate(-13deg);opacity:.09}
+.ambient-sigil-south{left:-21%;bottom:-22%;background-image:url('assets/sigils/frontier.webp');transform:rotate(-13deg);opacity:.09}
 .sigil-mote{position:absolute;left:var(--x);top:var(--y);width:var(--size);height:var(--size);background:#d8dde1;opacity:0;animation:sigil-evaporate var(--life) var(--delay) linear infinite;pointer-events:none}
 @keyframes sigil-evaporate{0%{transform:translate3d(0,20px,0) rotate(45deg) scale(.2);opacity:0}22%{opacity:.38}65%{opacity:.18}100%{transform:translate3d(var(--drift),-100px,0) rotate(90deg) scale(.15);opacity:0}}
 .sigil-ui .crew-hero{min-height:220px;position:relative;align-items:center;padding:34px 0 28px;border-bottom:1px solid #bac3cc24;margin-bottom:26px}
 .sigil-ui .crew-hero h1{font-weight:400;letter-spacing:-1.2px}.sigil-ui .crew-hero p:last-child{max-width:580px;line-height:1.9}
-.sigil-ui .crew-hero-mark{display:block;flex:0 0 190px;height:190px;font-size:0;background:url('assets/sigils/star-sea.png') center/contain no-repeat;opacity:.65;margin-right:35px}
+.sigil-ui .crew-hero-mark{display:block;flex:0 0 190px;height:190px;font-size:0;background:url('assets/sigils/star-sea.webp') center/contain no-repeat;opacity:.65;margin-right:35px}
 .sigil-ui .crew-header,.sigil-ui .header{border-color:#b8c2ca40}
 .sigil-ui .crew-brand,.sigil-ui .brand{font-weight:400;letter-spacing:2px}
 .sigil-ui .crew-brand span,.sigil-ui .brand-mark,.sigil-ui .eyebrow,.sigil-ui .room-tag,.sigil-ui .room-code-badge{color:#c7cdd2}
@@ -50,7 +50,7 @@ body.sigil-ui::before{background:linear-gradient(110deg,#101214e8,#101214b8),var
 .sigil-ui :is(.panel-heading,.crew-stage-title){border-bottom:1px solid #bac5cd1c}
 .sigil-ui .expedition-brief{border-left:2px solid #bcc5cb80;position:relative}
 .sigil-ui .brief-recap{border-color:#c1cbd32b}.sigil-ui #shared-nudge p{color:#dce1e4}
-.sigil-ui .realm-strip::after{content:'';width:100px;height:100px;background:url('assets/sigils/frontier.png') center/contain no-repeat;opacity:.12;transform:none}
+.sigil-ui .realm-strip::after{content:'';width:100px;height:100px;background:url('assets/sigils/frontier.webp') center/contain no-repeat;opacity:.12;transform:none}
 .sigil-ui .crew-arena{border-color:#c4d0d455}.sigil-ui .crew-arena .machine-stage{border-radius:0}
 .sigil-ui .domain-toolbar{background:transparent}.sigil-ui .domain-stage::before{border-radius:0;border-color:#c3cbd341;box-shadow:none}
 .sigil-ui .world-card,.sigil-ui .world-card[aria-pressed=true]{box-shadow:none!important;border-color:#b8c4ce44}.sigil-ui .world-card[aria-pressed=true]{border-color:#d3dadd}
@@ -69,7 +69,7 @@ body.sigil-ui::before{background:linear-gradient(110deg,#101214e8,#101214b8),var
 .sigil-ui .chamber-phase-pair,.sigil-ui .chamber-forecast>span{background:#c2d1db0a;color:#d3dfe5}.sigil-ui .chamber-forecast .forecast-match{background:#9cc9b31b;border-color:#9cc9b37d}
 .sigil-ui .chamber-phase-pair strong,.sigil-ui .chamber-forecast strong{color:#e1e9ed}
 .sigil-ui .chamber-landmark{background:#10191d88}.sigil-ui .chamber-landmark[aria-pressed=true]{background:#34404aa0;border-color:#d0dde280}
-.sigil-ui .chamber-guardian,.sigil-ui #chamber-dialog[data-complete=true] .chamber-guardian{box-shadow:none}.sigil-ui .chamber-guardian::before{content:'';position:absolute;inset:-42%;background:url('assets/sigils/star-sea.png') center/contain no-repeat;opacity:.18;pointer-events:none}
+.sigil-ui .chamber-guardian,.sigil-ui #chamber-dialog[data-complete=true] .chamber-guardian{box-shadow:none}.sigil-ui .chamber-guardian::before{content:'';position:absolute;inset:-42%;background:url('assets/sigils/star-sea.webp') center/contain no-repeat;opacity:.18;pointer-events:none}
 .sigil-ui button:focus-visible,.sigil-ui summary:focus-visible,.sigil-ui a:focus-visible,.sigil-ui input:focus-visible,.sigil-ui select:focus-visible{outline:2px solid #e3e9ed;outline-offset:4px}
 .sigil-ui[data-effects=off] .sigil-mote,.sigil-ui.sigils-sleeping .sigil-mote{animation-play-state:paused;opacity:0}
 .sigil-ui[data-encounter-status=paused] .sigil-mote,.sigil-ui[data-encounter-status=won] .sigil-mote,.sigil-ui[data-encounter-status=lost] .sigil-mote{animation-play-state:paused;opacity:0}
@@ -101,7 +101,7 @@ body.sigil-ui::before{background:linear-gradient(110deg,#101214e8,#101214b8),var
 .sigil-ui #arena-domain-symbol .domain-sigil{width:28px;height:28px}.sigil-ui .world-trigger{padding:5px 10px}
 .sigil-ui .realm-strip::after{background-image:var(--world-sigil);width:120px;height:120px;top:-6px;opacity:.15}
 .sigil-ui .chamber-guardian::before{background-image:var(--world-sigil);inset:-58%;opacity:.3}
-.sigil-ui .ambient-sigil-north{background-image:var(--world-sigil,url('assets/sigils/star-sea.png'))}
+.sigil-ui .ambient-sigil-north{background-image:var(--world-sigil,url('assets/sigils/star-sea.webp'))}
 .sigil-ui .chamber-portals{gap:8px}.sigil-ui .chamber-portal{background:#15202699;grid-template-columns:40px minmax(0,1fr);padding:10px 8px;min-height:76px;border-color:#afc3ce35}
 .sigil-ui .chamber-portal img.domain-sigil{width:40px;height:48px;object-fit:contain;border-radius:0;opacity:.55}
 .sigil-ui .chamber-portal[aria-pressed=true]{background:#36424a60;border-color:#c2ced5}

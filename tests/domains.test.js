@@ -9,7 +9,7 @@ async function fixture(){const h=setup(),created=await h.call('',{}),code=create
 
 test('six complete domain assets have distinct palettes, modes and bounded web sizes',async()=>{
   assert.equal(DOMAINS.length,6);assert.equal(new Set(DOMAINS.map(d=>d.id)).size,6);assert.equal(new Set(DOMAINS.map(d=>d.mode)).size,6);
-  for(const d of DOMAINS){assert.match(d.asset,/^assets\/domains\/[a-z-]+\.webp$/);assert.match(d.base,/^#[0-9a-f]{6}$/i);assert.equal(d.tintA.length,3);const file=new URL('../public/'+d.asset,import.meta.url);assert.ok((await stat(file)).size<300000);const header=await readFile(file);assert.equal(header.toString('ascii',8,12),'WEBP');}
+  for(const d of DOMAINS){assert.match(d.asset,/^\/assets\/domains\/[a-z-]+\.webp$/);assert.match(d.base,/^#[0-9a-f]{6}$/i);assert.equal(d.tintA.length,3);const file=new URL('../public'+d.asset,import.meta.url);assert.ok((await stat(file)).size<300000);const header=await readFile(file);assert.equal(header.toString('ascii',8,12),'WEBP');}
   assert.equal(domainId('aurora'),'taiga');assert.equal(domainId('crimson'),'corrupted');assert.equal(getDomain('unknown').id,'taiga');
 });
 test('team domain votes replace earlier ballots, preserve the incumbent on ties, and synchronize',async()=>{

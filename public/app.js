@@ -1,5 +1,5 @@
 import { VeilGame, EYES, SIGNALS, signalKey } from './engine.js';
-import { TwitchChat, beginTwitchLogin, consumeTwitchLogin, callbackUrl, savedClientId } from './twitch.js';
+import { channelDescription, TwitchChat, beginTwitchLogin, consumeTwitchLogin, callbackUrl, savedClientId } from './twitch.js';
 import { DomainScene } from './domain.js';
 
 let login=null,loginError=null;
@@ -130,7 +130,7 @@ function render(){
   $('test-button').disabled=mode==='practice'&&(!running||(eye.sealed&&s.phase!=='binding'));$('suggest-button').hidden=s.phase==='binding';$('suggest-button').disabled=eye.sealed||!running;
   $('sample-button').hidden=mode!=='practice';$('sample-button').disabled=!running||eye.sealed||s.phase==='binding';
   $('mode-pill').classList.toggle('live',connected);$('mode-pill').replaceChildren(el('span','status-dot'),document.createTextNode(mode==='practice'?' REHEARSAL':connected?' TWITCH CHAT':' TWITCH OFFLINE'));
-  $('mode-description').textContent=mode==='practice'?'Local practice · simulated contributors':connected?`@${connection.channel} · real viewer commands`:connection.message;
+  $('mode-description').textContent=mode==='practice'?'Local practice · simulated contributors':connected?`@${connection.channel} · ${channelDescription(connection.info)}`:connection.message;
   $('feed-source').textContent=caseSource==='practice'?'REHEARSAL · SIMULATED CHAT':`TWITCH · @${savedChannel||'reconnect'}`;
   $('connect-label').textContent=connected?`@${connection.channel}`:connection.state==='connecting'?'Connecting…':'Connect Twitch';document.querySelector('.connection-dot').classList.toggle('live',connected);
   $('connected-details').hidden=mode==='practice';$('connected-channel').textContent=connected?`Reading commands from @${connection.channel}. Keep this window open for the stream.`:connection.message;$('connect-form').hidden=connected;

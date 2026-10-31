@@ -166,9 +166,9 @@ export class DomainScene {
     this.stage.style.setProperty('--domain-accent',domain.accent);
     this.stage.style.setProperty('--guardian-hue',`${domain.hue}deg`);
     document.body.dataset.world=id;
-    document.body.style.setProperty('--world-sigil',`url("assets/sigils/${id}.png")`);
+    document.body.style.setProperty('--world-sigil',`url("/assets/sigils/${id}.webp")`);
     const portalSeal=document.getElementById('portal-seal');
-    if(portalSeal){portalSeal.src=`assets/sigils/${id}.png`;document.getElementById('portal-seal-domain').textContent=domain.name;}
+    if(portalSeal){portalSeal.src=`/assets/sigils/${id}.webp`;document.getElementById('portal-seal-domain').textContent=domain.name;}
     for(const [key,value]of Object.entries({base:domain.base,panel:domain.panel,raised:domain.raised,paper:domain.paper,ink:domain.ink,accent:domain.accent,art:`url("${domain.asset}")`}))document.body.style.setProperty(`--world-${key}`,value);
     document.getElementById('domain-coordinate').textContent = `DOMAIN 0${domain.mode+1} / ${domain.name.toUpperCase()}`;
     for (const button of document.querySelectorAll('[data-domain].domain-tab')) {

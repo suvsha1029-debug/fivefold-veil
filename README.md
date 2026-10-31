@@ -79,13 +79,13 @@ npm.cmd start -- --port 4173
 
 Open `http://localhost:4173/teams`. Apply each local migration once, in order. The generated `dist/` directory is build output; edit `public/`, `server/`, `app/`, or `db/`, then rebuild. Stop the built preview before rebuilding on Windows to release file locks. Local and hosted databases are separate. Sites applies hosted migrations when publishing.
 
-For a lightweight **in-memory rehearsal** without the framework runtime:
+For a lightweight **local rehearsal** without the framework runtime:
 
 ```powershell
 node server.mjs
 ```
 
-This serves `public/` on loopback port 4173 and implements the same room API with a memory store. All of those rooms disappear when that process stops. Use the built D1-backed preview for persistence testing. Do not start both servers on the same port.
+This serves `public/` on loopback port 4173 and stores rooms for 24 hours in a local SQLite database under `.openai/local/rehearsal/`. Room codes survive process restarts. This database is separate from hosted rooms and the built D1 preview. Do not start both servers on the same port.
 
 ## Twitch host relay
 
@@ -160,3 +160,7 @@ Tests cover deterministic rule generation, parsing including emoji, timing, voti
 - `tests/`: Node test suite; `SUBMISSION.md`: remaining contest work
 
 Remaining product work includes real Twitch playtesting, broader load/accessibility tests, optional verified browser/Twitch linking, account-level recovery and a publicly accessible distribution plan. The current research report describes version 0.2.0; its participation limits do not describe the new citation-enabled room mode.
+
+## Council of Streamers
+
+Team rooms now include optional 2–5 captain theory councils and live meme intermissions, with private review, a shared audience stage, equal-community voting, and free confidence-point predictions. See [COUNCIL_GUIDE.md](COUNCIL_GUIDE.md) for host setup, commands, scoring, moderation and current verification limits. Streamers keep their existing broadcasts; captains may relay their own Twitch chats. Browser and Twitch identities remain separate.

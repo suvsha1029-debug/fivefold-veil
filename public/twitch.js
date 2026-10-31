@@ -107,10 +107,11 @@ export class TwitchChat {
         this.#socket = socket;
         this.#keepalive = session.keepalive_timeout_seconds || 30;
         try {
-          if (!transferred) await this.#subscribe(session.id);
+          const subscription = transferred ? Promise.resolve() : this.#subscribe(session.id);
+          const [, info] = await Promise.all([subscription, this.#readChannelInfo()]);
           if (this.#stopped || generation !== this.#generation) return;
           this.#retries = 0;
-          this.onStatus({ state: 'connected', channel: this.#user.login, message: `Connected to @${this.#user.login}` });
+          this.onStatus({ state: 'connected', channel: this.#user.login, info, message: `Connected to @${this.#user.login}` });
           if (old && old !== socket) old.close();
         } catch (error) { this.#fail(error.message); }
       } else if (type === 'session_reconnect') {
@@ -125,6 +126,8 @@ export class TwitchChat {
       } else if (type === 'notification' && data.payload?.subscription?.type === 'channel.chat.message') {
         const chat = data.payload.event;
         if (!chat || chat.broadcaster_user_id !== this.#user?.user_id || typeof chat.message?.text !== 'string' || !chat.chatter_user_id) return;
+        // Each captain relays their own channel; ignore Shared Chat mirrors.
+        if(chat.source_broadcaster_user_id&&chat.source_broadcaster_user_id!==chat.broadcaster_user_id)return;
         const id = chat.message_id || data.metadata.message_id;
         if (!id || this.#seen.has(id)) return;
         this.#seen.add(id);
@@ -148,6 +151,20 @@ export class TwitchChat {
       this.onStatus({ state: 'reconnecting', message: 'Twitch connection interrupted. The case is paused.' });
       socket.close();
     };
+  }
+
+  async #readChannelInfo() {
+    try {
+      const id = this.#user.user_id;
+      const response = await this.fetch('https://api.twitch.tv/helix/channels?broadcaster_id='+encodeURIComponent(id), {
+        headers: {Authorization: 'Bearer '+this.#token, 'Client-Id': this.#clientId},
+        signal: AbortSignal.timeout(3500),
+      });
+      if (!response.ok) return null;
+      const {data} = await response.json();
+      const channel = data?.find(row => row.broadcaster_id === id);
+      return channel ? {category: channel.game_name || '', title: channel.title || ''} : null;
+    } catch { return null; }
   }
 
   async #subscribe(sessionId) {
@@ -191,4 +208,9 @@ export class TwitchChat {
     this.#seen.clear();
     if (notify) this.onStatus({ state: 'disconnected', message: 'Twitch disconnected. Practice mode is available.' });
   }
+}
+
+export function channelDescription(info) {
+  if (!info) return 'Channel details unavailable';
+  return [info.category || 'No category set', info.title].filter(Boolean).join(' · ');
 }

@@ -11,7 +11,7 @@ class MockSocket {
 const welcome = (id = 'session-one') => ({ metadata: { message_type: 'session_welcome' }, payload: { session: { id, keepalive_timeout_seconds: 30 } } });
 const notification = (messageId, broadcaster = '123') => ({ metadata: { message_type: 'notification', message_id: messageId }, payload: { subscription: { type: 'channel.chat.message' }, event: { broadcaster_user_id: broadcaster, chatter_user_id: '456', chatter_user_name: '<Researcher>', message_id: messageId, message: { text: '!test blue circle 2' } } } });
 
-function fixture({ scope = true, client = 'public-client', subscribeOk = true, onModeration = null } = {}) {
+function fixture({ scope = true, client = 'public-client', subscribeOk = true, channelOk = true, onModeration = null } = {}) {
   MockSocket.sockets = [];
   const requests = [], statuses = [], messages = [];
   const chat = new TwitchChat({
@@ -20,6 +20,7 @@ function fixture({ scope = true, client = 'public-client', subscribeOk = true, o
     fetchImpl: async (url, init) => {
       requests.push({ url, init });
       if (url.includes('/validate')) return { ok: true, json: async () => ({ user_id: '123', login: 'ourchannel', client_id: client, scopes: scope ? ['user:read:chat'] : [] }) };
+      if (url.includes('/channels?')) return { ok: channelOk, json: async () => ({data:[{broadcaster_id:'123',game_name:'Chess',title:'Final match'}]}) };
       return { ok: subscribeOk, status: subscribeOk ? 202 : 403 };
     },
   });
@@ -33,12 +34,15 @@ test('uses broadcaster identity, read-only chat permission, and deduplicates del
     const socket = MockSocket.sockets[0];
     await socket.receive(welcome());
     assert.equal(f.statuses.at(-1).state, 'connected');
-    const subscription = JSON.parse(f.requests[1].init.body);
+    assert.deepEqual(f.statuses.at(-1).info,{category:'Chess',title:'Final match'});
+    const subscription = JSON.parse(f.requests.find(r=>r.url.includes('/subscriptions')).init.body);
     assert.deepEqual(subscription.condition, { broadcaster_user_id: '123', user_id: '123' });
     assert.equal(subscription.transport.session_id, 'session-one');
     await socket.receive(notification('message-one'));
     await socket.receive(notification('message-one'));
     await socket.receive(notification('message-two', 'another-channel'));
+    const mirrored=notification('shared-copy');mirrored.payload.event.source_broadcaster_user_id='999';
+    await socket.receive(mirrored);
     assert.equal(f.messages.length, 1);
     assert.equal(f.messages[0].name, '<Researcher>');
   } finally { f.chat.disconnect(false); }
@@ -99,3 +103,13 @@ test('subscription failure and revoked permission close the connection', async (
   g.chat.disconnect(false);
 });
 
+
+test('a failed channel metadata lookup still connects chat',async()=>{
+  const f=fixture({channelOk:false});
+  try{
+    await f.chat.connect('test-token','public-client');
+    await MockSocket.sockets[0].receive(welcome());
+    assert.equal(f.statuses.at(-1).state,'connected');
+    assert.equal(f.statuses.at(-1).info,null);
+  }finally{f.chat.disconnect(false);}
+});
