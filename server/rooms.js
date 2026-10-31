@@ -3,6 +3,7 @@ import { getDomain, domainId, validDomain, DEFAULT_TEAM_DOMAINS, teamDomainState
 import { teamChambers, tuneChamber } from '../public/chamber-engine.js';
 import { recordDiscovery, resetWitness, witnessState, witnessAction, submitWitness, moderateWitness } from './witness.js';
 import { councilState, councilAction, captainTeam, councilLocked, cancelCouncil, resolveCouncil, guardCouncilSeal, moderateCouncil } from './council.js';
+import { loungeState, loungeAction } from './lounge.js';
 
 const TTL=24*60*60*1000;
 const AVATARS=['🦊','🦉','🐸','🐙','🦋','🐼','🐺','🐱'];
@@ -98,7 +99,7 @@ function publicState(room,game,auth,now){
     theme:domainId(room.theme),teams,activeTeams:teams.filter(t=>t.contributors>0).length,
     members:room.members.map(m=>({id:m.id,name:m.name,avatar:m.avatar,team:m.team,source:m.source,contributed:game.participants.has(m.id)})),
     me:auth.member?{id:auth.member.id,name:auth.member.name,avatar:auth.member.avatar,team:auth.member.team,source:auth.member.source,locked:auth.member.lockedRound===room.round,domainVote:room.domainVotes?.[auth.member.id]?.team===auth.member.team?room.domainVotes[auth.member.id].domain:null,eligible:game.eyes.filter(e=>game.eligible(e,auth.member.id)).map(e=>e.id),votes:Object.fromEntries(game.eyes.map(e=>[e.id,e.votes.get(auth.member.id)?.optionId||null]))}:null,
-    council:councilState(room,auth,now),canRelay:auth.host||!!captainTeam(room,auth.member?.id),
+    council:councilState(room,auth,now),canRelay:auth.host||!!captainTeam(room,auth.member?.id),lounge:loungeState(room),
     witness:witnessState(room,auth,now),isHost:auth.host,game:snapshot,activity:room.activity};
 }
 
@@ -157,7 +158,9 @@ export class RoomApi {
         const previous=room.requests.find(r=>r.id===requestId&&r.by===actorKey);
         if(previous)return json({result:previous.result,state:publicState(room,game,auth,now)});
         let result;
-        if(action==='council'){
+        if(action==='lounge'){
+          result=loungeAction(room,auth,body,now);
+        } else if(action==='council'){
           result=councilAction(room,game,auth,body,now);
         } else if(action==='council-moderation'){
           result=moderateCouncil(room,auth,body,now);

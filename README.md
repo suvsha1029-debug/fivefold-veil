@@ -164,3 +164,11 @@ Remaining product work includes real Twitch playtesting, broader load/accessibil
 ## Council of Streamers
 
 Team rooms now include optional 2–5 captain theory councils and live meme intermissions, with private review, a shared audience stage, equal-community voting, and free confidence-point predictions. See [COUNCIL_GUIDE.md](COUNCIL_GUIDE.md) for host setup, commands, scoring, moderation and current verification limits. Streamers keep their existing broadcasts; captains may relay their own Twitch chats. Browser and Twitch identities remain separate.
+
+## Domain lounges
+
+Open **Enter domain lounge** from an expedition. Six shared conversations have distinct scenery, sigils and original synthesized ambience. Music starts on each listener’s explicit click and stops on close or a hidden tab. The host can pause chat, remove messages or clear a domain. Latest 24 messages per domain stay with the room for its 24-hour lifetime.
+
+The meme wall displays that domain’s approved Council submissions after the reveal. Hosts can feature an entry on the Council stage. **Copy lounge invite** opens a spectator view at the selected domain.
+
+Taiga and Lunar Waters also offer **Explore original 3D grove**, reusing the owner’s Lunar Domain source. The optional Three.js bundle is loaded on request, rendered at a bounded frame rate and removed on exit. Its MIT attribution is retained in `public/assets/sanctuary/vendor/LICENSE`. Scenic backdrops stay available without starting the grove.

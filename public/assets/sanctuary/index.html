@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#081322"><title>Fivefold Veil · Original sanctuary</title><meta name="description" content="An immersive lunar domain with alpine shrubs, Arctic groundcover, moonlit firs, flowing aurora and optional snow."><link rel="stylesheet" href="style.css"><style>
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#081322}
+body>*:not(canvas):not(#error):not(script){display:none!important}
+#scene{display:block;position:fixed;inset:0;width:100%;height:100%;touch-action:none}
+#error:not([hidden]){display:block;position:fixed;inset:auto 10% 12%;padding:20px;background:#102532;color:#dfedec;font:14px system-ui}
+</style></head><body class="clean">
+<canvas id="scene" aria-label="Interactive snowy lunar garden. Drag to look around, scroll to zoom."></canvas><div class="vignette"></div>
+<header><div class="eyebrow"><span class="mark">☾</span> AFTER THE WORLD FALLS QUIET</div><h1>Lunar<br>Domain<span>.</span></h1><p>An alpine world beneath the moon.</p></header>
+<div class="top-right"><span class="live-dot"></span> AN INTERACTIVE WINTER SANCTUARY <button id="hide" aria-label="Hide interface" title="Hide interface (H)">↗</button></div>
+<aside id="controls"><div class="panel-heading"><span>THE NIGHT IS YOURS</span><span class="tiny">☾</span></div><div class="presets" role="group" aria-label="Night atmosphere"><button data-preset="boreal" class="active">Boreal</button><button data-preset="violet">Violet</button><button data-preset="quiet">Still night</button></div>
+<label for="aurora">Northern lights <output id="auroraValue">80%</output></label><input id="aurora" type="range" min="0" max="100" value="80">
+<button id="snowToggle" class="snow-toggle" role="switch" aria-checked="true" title="Toggle all snow (N)">Snow landscape <span>ON</span></button>
+<label for="snow">Snowfall <output id="snowValue">Soft flurries</output></label><input id="snow" type="range" min="0" max="100" value="55">
+<label for="wind">Winter breeze <output id="windValue">Gentle</output></label><input id="wind" type="range" min="0" max="100" value="25">
+<div class="actions"><button id="pause" aria-pressed="false"><span>Ⅱ</span> Pause scene</button><button id="reset">↺ Reset view</button></div><div class="panel-foot"><span>SNOW · MOONLIGHT · STILLNESS</span><span id="fps">— FPS</span></div></aside>
+<div class="specimen"><div class="eyebrow">STAY A LITTLE LONGER</div><p>A quieter world.</p><span>Juniper · dwarf willow · alpine heather</span><div class="spec-line"></div><div class="view-buttons"><button data-view="garden" class="active">Garden</button><button data-view="pond">Pond</button><button data-view="sky">Sky</button></div></div>
+<footer><span>LUNAR DOMAIN · ALPINE & ARCTIC</span><span>DRAG TO EXPLORE <i>·</i> SCROLL TO ZOOM <i>·</i> H CONTROLS · N SNOW</span><button id="auto" aria-pressed="false">SLOW ORBIT <span>OFF</span></button></footer>
+<button id="show" aria-label="Show scene controls (H)" title="Controls · H">☷</button><div id="error" hidden><h2>The garden needs WebGL 2.</h2><p>Please enable hardware acceleration in your browser and reload.</p></div><script type="module" src="app.js"></script></body></html>

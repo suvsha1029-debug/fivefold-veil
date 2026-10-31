@@ -21,3 +21,5 @@ npm install --prefix artifacts/qa-tooling --no-audit --no-fund --package-lock=fa
 $env:QA_ORIGIN='http://127.0.0.1:4191'
 node scripts/browser-qa.mjs
 ```
+
+Domain lounge update adds four server regression tests, bringing the suite to 73. Separate host, member and mobile spectator browser sessions verified shared messages, domain isolation, role controls, literal text, deep links and audio activation. The native audio instrumentation measured no activation before clicking, one reused AudioContext after enabling and suspension on exit. An additional browser check loaded the original grove, switched viewpoint, removed it when leaving Lunar and confirmed 390px layout without horizontal overflow.
