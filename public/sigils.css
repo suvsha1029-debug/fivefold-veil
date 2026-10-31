@@ -1,0 +1,126 @@
+/* Smoked silver: angular transparent chrome, etched sigils, restrained dust. */
+body.sigil-ui{
+  --bg:#101214;--text:#e7e8e7;--muted:#aeb5bc;--gold:#c8cbd0;
+  --border:#bdc6cd35;--paper:#dfe3e5;--ink:#182024;
+  --glass:rgba(17,21,25,.77);--glass-raised:rgba(39,45,50,.68);
+  background:#101214;color:var(--text);
+}
+body.sigil-ui::before{background:linear-gradient(110deg,#101214e8,#101214b8),var(--world-art,url('assets/aurora-forest.png')) center/cover fixed;opacity:1;filter:saturate(.28)}
+.sigil-ui .shell,.sigil-ui .crew-shell{position:relative;z-index:1}
+.sigil-atmosphere{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0;contain:strict}
+.sigil-map-dust{position:absolute;inset:0;pointer-events:none;z-index:1;overflow:hidden;contain:strict}
+#chamber-dialog:not([open]) .sigil-mote{animation-play-state:paused}
+.ambient-sigil{position:absolute;display:block;width:min(56vw,740px);aspect-ratio:1;background:url('assets/sigils/star-sea.png') center/contain no-repeat;opacity:.075}
+.ambient-sigil-north{right:-19%;top:-16%;transform:rotate(12deg)}
+.ambient-sigil-south{left:-21%;bottom:-22%;background-image:url('assets/sigils/frontier.png');transform:rotate(-13deg);opacity:.09}
+.sigil-mote{position:absolute;left:var(--x);top:var(--y);width:var(--size);height:var(--size);background:#d8dde1;opacity:0;animation:sigil-evaporate var(--life) var(--delay) linear infinite;pointer-events:none}
+@keyframes sigil-evaporate{0%{transform:translate3d(0,20px,0) rotate(45deg) scale(.2);opacity:0}22%{opacity:.38}65%{opacity:.18}100%{transform:translate3d(var(--drift),-100px,0) rotate(90deg) scale(.15);opacity:0}}
+.sigil-ui .crew-hero{min-height:220px;position:relative;align-items:center;padding:34px 0 28px;border-bottom:1px solid #bac3cc24;margin-bottom:26px}
+.sigil-ui .crew-hero h1{font-weight:400;letter-spacing:-1.2px}.sigil-ui .crew-hero p:last-child{max-width:580px;line-height:1.9}
+.sigil-ui .crew-hero-mark{display:block;flex:0 0 190px;height:190px;font-size:0;background:url('assets/sigils/star-sea.png') center/contain no-repeat;opacity:.65;margin-right:35px}
+.sigil-ui .crew-header,.sigil-ui .header{border-color:#b8c2ca40}
+.sigil-ui .crew-brand,.sigil-ui .brand{font-weight:400;letter-spacing:2px}
+.sigil-ui .crew-brand span,.sigil-ui .brand-mark,.sigil-ui .eyebrow,.sigil-ui .room-tag,.sigil-ui .room-code-badge{color:#c7cdd2}
+.sigil-ui em{color:#c7cdd2;font-weight:400}
+/* Keep actual circular symbols and the guardian intact; square the UI containers. */
+.sigil-ui :is(.panel,.lobby-card,.room-summary,.connection-banner,.realm-strip,.expedition-brief,.room-help,.control-banner,.host-desk,.crew-outcome,.result-panel,.proof-panel,.optional-worlds,.join-customization,.encounter-tools,.recovery-banner,.status-strip,.command-preview,.world-card,.domain-selection,.chamber-passport,.passport-stamp,.chamber-portal,.chamber-phase-pair,.chamber-forecast>span,.chamber-landmark,.callback-box,.dialog-note,.sealed-discovery,.discoveries-list li,.team-intro-banner,.editor-option,.toast){border-radius:0!important;box-shadow:none!important}
+.sigil-ui :is(button,input,select,textarea,dialog,.identity-avatar,.theory-letter,.feed-avatar,.section-number){border-radius:0!important;box-shadow:none!important}
+.sigil-ui :is(.primary-button,.outline-button,.text-button,.domain-tabs){border-radius:0!important;box-shadow:none!important}
+.sigil-ui :is(.machine-output,.landmark-phase,.chamber-memory){border-radius:0!important;box-shadow:none!important}
+.sigil-ui :is(.panel,.lobby-card,.crew-identity,.crew-theories,.theory-panel,.room-summary,.realm-strip,.expedition-brief,.room-help,.control-banner,.host-desk,.proof-panel,.crew-outcome,.result-panel,.encounter-tools,.status-strip,.team-intro-banner){background:var(--glass)!important;border:1px solid var(--border);color:var(--text)}
+.sigil-ui .panel,.sigil-ui .lobby-card{border-top-color:#cad1d65c}
+.sigil-ui :is(.lobby-card,.theory-panel)::before{border-radius:0;border-color:#b8c3cc18}
+.sigil-ui .lobby-card{padding:30px}.sigil-ui .lobby-grid{gap:26px;max-width:1100px}
+.sigil-ui :is(.lobby-card h2,.crew-stage-title h2,.crew-theories h2,.brief-main h2,.identity-name,.room-topbar h1,.realm-strip h2){color:#e5e7e8;font-weight:400}
+.sigil-ui :is(.lobby-card p,.lobby-card label,.room-guide,.panel-description,.theory-copy small,.theory-votes,.quiet-tag,.field-note,.deck-hint,.team-instruction,.hint-actions>span,.brief-main p:not(.eyebrow),.brief-recap p,.control-banner>span){color:#b5bec6}
+.sigil-ui :is(.team-row,.emoji-key,.theory-card,.eye-tab,.discovery-chip,.avatar-key,.effects-button,.domain-tab,.world-trigger){background:#1a202480!important;border:1px solid #b7c1cb38;color:#d5dce0}
+.sigil-ui :is(.team-row,.emoji-key,.theory-card,.eye-tab,.discovery-chip,.avatar-key):hover:not(:disabled){background:#49515955!important;border-color:#c4cdd080;box-shadow:none}
+.sigil-ui :is(.team-row,.emoji-key,.avatar-key,.discovery-chip)[aria-pressed=true],.sigil-ui .theory-card.selected,.sigil-ui .eye-tab.active{background:#606a7033!important;border-color:#ccd2d3;box-shadow:inset 2px 0 #ccd2d3!important}
+.sigil-ui .theory-card.eliminated{background:#0d101366!important;border-color:#8b959d24}.sigil-ui .theory-card.eliminated .theory-copy :is(strong,small){color:#828b93}
+.sigil-ui .theory-letter,.sigil-ui .identity-avatar{background:#707a801c!important;border:1px solid #b5c1cb55;color:#cdd4d9}
+.sigil-ui .theory-card.selected .theory-letter{background:#c3cbd3!important;color:#172028}
+.sigil-ui :is(.primary-button,.lock-button,.test-button,.realm-buttons .chamber-enter){background:#ced2d3!important;color:#192026!important;border:1px solid #e1e5e6!important;font-weight:550;letter-spacing:.2px}
+.sigil-ui :is(.primary-button,.lock-button,.test-button):hover:not(:disabled){background:#e5e7e7!important}
+.sigil-ui :is(.outline-button,.text-button,.icon-button){color:#c8d0d6;border-color:#aebcc54d;background:transparent}
+.sigil-ui .outline-button:hover:not(:disabled){background:#a9b7c314;border-color:#c3cdd4}
+.sigil-ui button:disabled{opacity:.48}.sigil-ui .theory-card:disabled{opacity:1}.sigil-ui .theory-card.eliminated{opacity:.65}
+.sigil-ui input,.sigil-ui select,.sigil-ui textarea{background:#0e1317c7!important;border-color:#b2c1cb45!important;color:#dde1e3!important;min-height:42px}
+.sigil-ui select option{background:#1a2025;color:#e3e6e8}.sigil-ui input::placeholder{color:#8c98a3}
+.sigil-ui :is(.proof-panel h3,.deck-bottom code,.control-banner strong,.brief-recap>strong,.chamber-home-progress,.chamber-team,.realm-label,.crew-stage-title>span,.team-row .team-size,.emoji-keyboard legend,.optional-worlds summary,.join-customization summary,.host-desk summary){color:#c3cbd1!important}
+.sigil-ui :is(.panel-heading,.crew-stage-title){border-bottom:1px solid #bac5cd1c}
+.sigil-ui .expedition-brief{border-left:2px solid #bcc5cb80;position:relative}
+.sigil-ui .brief-recap{border-color:#c1cbd32b}.sigil-ui #shared-nudge p{color:#dce1e4}
+.sigil-ui .realm-strip::after{content:'';width:100px;height:100px;background:url('assets/sigils/frontier.png') center/contain no-repeat;opacity:.12;transform:none}
+.sigil-ui .crew-arena{border-color:#c4d0d455}.sigil-ui .crew-arena .machine-stage{border-radius:0}
+.sigil-ui .domain-toolbar{background:transparent}.sigil-ui .domain-stage::before{border-radius:0;border-color:#c3cbd341;box-shadow:none}
+.sigil-ui .world-card,.sigil-ui .world-card[aria-pressed=true]{box-shadow:none!important;border-color:#b8c4ce44}.sigil-ui .world-card[aria-pressed=true]{border-color:#d3dadd}
+.sigil-ui .world-card-copy{background:linear-gradient(0deg,#11171bf2,#11171b80)}
+.sigil-ui :is(.sealed-discovery,.discoveries-list li,.command-preview,.binding-proposal){background:#1d282d80;border-color:#afc3c54d;color:#d9e3e1}
+.sigil-ui :is(.sealed-discovery p,.binding-proposal code,.binding-empty,.discoveries-list span,.binding-panel>p){color:#c0cdcf}
+.sigil-ui .room-journal th,.sigil-ui th{background:#171e23;color:#abb9c4}
+.sigil-ui dialog{background:#141a1ef5;color:#e2e7ea;border-color:#bac6ce70;box-shadow:0 24px 80px #0008!important;color-scheme:dark}
+.sigil-ui dialog::backdrop{background:#070b0dcc;backdrop-filter:none}
+.sigil-ui dialog :is(p,code,em,.eyebrow,.field-note,.room-guide,.setup-list,.how-to-list p,.dialog-note,.client-label){color:#b5c1ca}
+.sigil-ui dialog .outline-button{color:#c9d2d9}.sigil-ui .dialog-note,.sigil-ui .callback-box{background:#28303980}
+.sigil-ui #editor-feedback{background:#29343d;color:#d9e4eb;border-color:#9babb65e;border-radius:0}
+.sigil-ui .toast{background:#d3d9dc;color:#1b252c;border-color:#a8b8c1}.sigil-ui .toast.error{background:#e0c3bd;color:#4d2821}
+.sigil-ui #chamber-dialog{background:#11171af7}.sigil-ui .chamber-header,.sigil-ui .chamber-atlas{background:#11171ae8}
+.sigil-ui .chamber-console{background:#172025e8;color:#dbe3e8}.sigil-ui .chamber-console :is(p,h3,small,.chamber-link-note,.chamber-role-note,.chamber-phase-pair span){color:#b8c7d0}
+.sigil-ui .chamber-phase-pair,.sigil-ui .chamber-forecast>span{background:#c2d1db0a;color:#d3dfe5}.sigil-ui .chamber-forecast .forecast-match{background:#9cc9b31b;border-color:#9cc9b37d}
+.sigil-ui .chamber-phase-pair strong,.sigil-ui .chamber-forecast strong{color:#e1e9ed}
+.sigil-ui .chamber-landmark{background:#10191d88}.sigil-ui .chamber-landmark[aria-pressed=true]{background:#34404aa0;border-color:#d0dde280}
+.sigil-ui .chamber-guardian,.sigil-ui #chamber-dialog[data-complete=true] .chamber-guardian{box-shadow:none}.sigil-ui .chamber-guardian::before{content:'';position:absolute;inset:-42%;background:url('assets/sigils/star-sea.png') center/contain no-repeat;opacity:.18;pointer-events:none}
+.sigil-ui button:focus-visible,.sigil-ui summary:focus-visible,.sigil-ui a:focus-visible,.sigil-ui input:focus-visible,.sigil-ui select:focus-visible{outline:2px solid #e3e9ed;outline-offset:4px}
+.sigil-ui[data-effects=off] .sigil-mote,.sigil-ui.sigils-sleeping .sigil-mote{animation-play-state:paused;opacity:0}
+.sigil-ui[data-encounter-status=paused] .sigil-mote,.sigil-ui[data-encounter-status=won] .sigil-mote,.sigil-ui[data-encounter-status=lost] .sigil-mote{animation-play-state:paused;opacity:0}
+.sigil-ui[data-effects=off] .ambient-sigil{opacity:.05}
+@media(max-width:680px){.sigil-ui .crew-hero{min-height:150px;padding:22px 0;gap:12px}.sigil-ui .crew-hero-mark{flex-basis:83px;height:120px;margin:0;opacity:.4}.sigil-ui .crew-hero h1{font-size:32px;letter-spacing:-.7px}.sigil-ui .crew-hero p:last-child{font-size:12px}.sigil-ui .lobby-card{padding:23px}.ambient-sigil{width:95vw}.sigil-mote:nth-child(n+12){display:none}.sigil-ui .room-topbar h1{font-size:26px}}
+@media(prefers-reduced-motion:reduce){.sigil-mote{animation:none!important;display:none}.sigil-ui *, .sigil-ui *::before,.sigil-ui *::after{scroll-behavior:auto;transition:none!important}}
+@media(max-width:680px){.sigil-ui .crew-header{flex-wrap:wrap}.sigil-ui .crew-brand{white-space:nowrap;font-size:17px;letter-spacing:1.3px}.sigil-ui .crew-brand img{width:26px;height:26px}.sigil-ui .crew-header nav{margin-left:auto}}
+@media(forced-colors:active){.sigil-atmosphere,.sigil-ui .crew-hero-mark{display:none}.sigil-ui :is(.panel,button,input,select,dialog){border:1px solid CanvasText}}
+
+/* Domain registry: shared silver geometry, six distinct silhouettes. */
+.domain-sigil{display:block;width:64px;height:64px;object-fit:contain;pointer-events:none;flex-shrink:0}
+.sigil-ui .portal-seal{margin:0 34px 0 18px;flex:0 0 220px;display:flex;align-items:center;flex-direction:column;text-align:center;gap:9px;padding:18px;border:1px solid #bdc6cd30;position:relative;background:#151b1e42}
+.portal-seal::before,.portal-seal::after{content:'';position:absolute;width:18px;height:18px;border-color:#c9cfd1;border-style:solid;pointer-events:none}
+.portal-seal::before{left:-1px;top:-1px;border-width:1px 0 0 1px}.portal-seal::after{right:-1px;bottom:-1px;border-width:0 1px 1px 0}
+.portal-seal img{width:164px;height:164px;object-fit:contain;opacity:.85}.portal-seal figcaption{font:17px var(--serif);color:#d4dbde}.portal-seal small{font:9px var(--sans);color:#99a6af}
+.portal-principles{display:flex;gap:20px;flex-wrap:wrap;margin-top:24px;font:9px var(--mono);color:#aab7bf;letter-spacing:.5px}
+.sigil-ui .crew-hero{gap:24px;padding:34px 0;min-height:280px}.sigil-ui .crew-hero>div{max-width:670px}
+.sigil-ui .lobby-card h2{font-size:30px}.sigil-ui .lobby-card .eyebrow{letter-spacing:1.6px}
+.sigil-ui .world-gallery{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.sigil-ui .world-card{background:#141b20;isolation:isolate}
+.sigil-ui .world-card>img:not(.domain-sigil){height:144px;filter:saturate(.55) brightness(.65);transition:filter .2s}
+.sigil-ui .world-card:hover>img:not(.domain-sigil),.sigil-ui .world-card[aria-pressed=true]>img:not(.domain-sigil){filter:saturate(.8) brightness(.8)}
+.sigil-ui .world-card .world-card-sigil{position:absolute;top:16px;right:16px;width:84px;height:84px;padding:6px;background:#0b111b70;border:1px solid #b3c3cb40;opacity:.95}
+.sigil-ui .world-card-copy{width:100%;box-sizing:border-box;padding:15px;background:#141c21b8;min-height:123px}
+.sigil-catalogue{display:block;font:8px/1.6 var(--mono);letter-spacing:1px;text-transform:uppercase;color:#aab9c1;margin-bottom:7px}
+.sigil-ui .world-card strong{font-size:21px;font-weight:400}.sigil-ui .world-card small{font-size:10px;color:#b1bfc9}
+.sigil-ui .world-card .world-meta{margin-top:14px;color:#c8d3db;font-size:9px}.sigil-ui .world-home-mark{border-radius:0;background:#cdd5d9;color:#1b242b}
+.sigil-ui .world-card[aria-pressed=true]::after{content:'';position:absolute;inset:0;pointer-events:none;border-left:3px solid #ced6da}
+.sigil-ui #arena-domain-symbol .domain-sigil{width:28px;height:28px}.sigil-ui .world-trigger{padding:5px 10px}
+.sigil-ui .realm-strip::after{background-image:var(--world-sigil);width:120px;height:120px;top:-6px;opacity:.15}
+.sigil-ui .chamber-guardian::before{background-image:var(--world-sigil);inset:-58%;opacity:.3}
+.sigil-ui .ambient-sigil-north{background-image:var(--world-sigil,url('assets/sigils/star-sea.png'))}
+.sigil-ui .chamber-portals{gap:8px}.sigil-ui .chamber-portal{background:#15202699;grid-template-columns:40px minmax(0,1fr);padding:10px 8px;min-height:76px;border-color:#afc3ce35}
+.sigil-ui .chamber-portal img.domain-sigil{width:40px;height:48px;object-fit:contain;border-radius:0;opacity:.55}
+.sigil-ui .chamber-portal[aria-pressed=true]{background:#36424a60;border-color:#c2ced5}
+.sigil-ui .chamber-portal[aria-pressed=true] img,.sigil-ui .chamber-portal[data-recovered=true] img{opacity:1}
+.sigil-ui .chamber-portal[data-recovered=true]{border-bottom:2px solid #b7d4c8}
+.sigil-ui .passport-symbol.domain-sigil{width:62px;height:62px;opacity:.35;margin-bottom:12px}
+.sigil-ui .passport-stamp.recovered .domain-sigil{opacity:1}.sigil-ui .passport-stamp{background:#121b2188}.sigil-ui .passport-stamp.recovered{background:#31453f30}
+@media(max-width:680px){
+ .sigil-ui .crew-hero{gap:14px;align-items:flex-start;padding:26px 0}.sigil-ui .crew-hero h1{font-size:32px}
+ .sigil-ui .portal-seal{flex-basis:90px;min-width:0;padding:8px;margin:4px 0 0;gap:6px}.portal-seal img{width:72px;height:90px}.portal-seal .eyebrow{font-size:6px;letter-spacing:1px}.portal-seal figcaption{font-size:11px}.portal-seal small{display:none}
+ .portal-principles{font-size:8px;gap:9px;margin-top:15px;flex-direction:column}.sigil-ui .crew-hero>div{min-width:0}
+ .sigil-ui .world-gallery,.sigil-ui #domain-dialog .world-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .sigil-ui .world-card>img:not(.domain-sigil){height:112px}.sigil-ui .world-card .world-card-sigil{width:68px;height:68px;top:12px;right:12px}
+ .sigil-ui .world-card-copy{padding:12px;min-height:140px}.sigil-ui .world-card strong{font-size:17px}.sigil-catalogue{font-size:7px;letter-spacing:.5px}
+ .sigil-ui .chamber-portal{grid-template-columns:28px minmax(0,1fr);padding:7px 5px}.sigil-ui .chamber-portal img.domain-sigil{width:28px;height:38px}
+}
+@media(prefers-reduced-motion:reduce){.sigil-ui .world-card>img{transition:none}}
+
+/* Preserve the supplied artwork and its proportions; blend its dark paper into the UI. */
+.domain-sigil,.portal-seal img{mix-blend-mode:screen}
+.sigil-ui .world-card .world-card-sigil{background:transparent;border:0;padding:0}
+.ambient-sigil,.sigil-ui .chamber-guardian::before,.sigil-ui .realm-strip::after{mix-blend-mode:screen}

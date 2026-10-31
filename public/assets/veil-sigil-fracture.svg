@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none" stroke="#aeb3b9" stroke-width="2" stroke-linejoin="miter">
+  <defs><path id="arm" d="M200 181c-13-26-19-39-15-57l-17 6 20-25-12-4 24-40 24 40-12 4 20 25-17-6c4 18-2 31-15 57ZM200 61V40m-40-21q40 44 80 0"/></defs>
+  <use href="#arm"/><use href="#arm" transform="rotate(90 200 200)"/><use href="#arm" transform="rotate(180 200 200)"/><use href="#arm" transform="rotate(270 200 200)"/>
+  <path d="m200 174 26 26-26 26-26-26Zm-44-18 12 12m64 64 12 12m0-88-12 12m-64 64-12 12"/>
+  <g fill="#aeb3b9" stroke="none"><circle cx="200" cy="20" r="3"/><circle cx="20" cy="200" r="3"/><circle cx="380" cy="200" r="3"/><circle cx="200" cy="380" r="3"/><circle cx="150" cy="95" r="3"/><circle cx="250" cy="95" r="3"/><circle cx="150" cy="305" r="3"/><circle cx="250" cy="305" r="3"/></g>
+</svg>

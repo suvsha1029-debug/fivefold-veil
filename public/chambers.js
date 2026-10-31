@@ -1,4 +1,5 @@
 import { DOMAINS, getDomain } from './domains.js';
+import { DOMAIN_SIGILS, makeSigil } from './domain-sigils.js';
 import { CHAMBERS, RELAY_NAMES, echoEffects, rotateEcho, chamberRule, relayDescription } from './chamber-engine.js';
 
 const $=id=>document.getElementById(id);
@@ -34,7 +35,7 @@ export class DomainChambers {
     this.forecast=el('div','chamber-forecast');this.forecast.setAttribute('aria-label','Preview of your next tune');$('chamber-link-note').after(this.forecast);
     this.feedback=el('p','chamber-feedback');this.feedback.setAttribute('role','status');$('chamber-tune').after(this.feedback);
     $('chamber-tune').addEventListener('click',async()=>{const result=await this.tune(this.domain,this.selected);if(result){this.feedback.textContent=result.message;this.feedback.dataset.error='false';this.toast(result.message);}});
-    for(const domain of DOMAINS){const button=el('button','chamber-portal');button.type='button';button.dataset.domain=domain.id;const img=el('img');img.src=domain.asset;img.alt='';img.loading='lazy';button.append(img,el('span','',`${domain.symbol} ${domain.name}`),el('small'));button.addEventListener('click',()=>this.visit(domain.id));this.tiles.set(domain.id,button);$('chamber-portals').append(button);}
+    for(const domain of DOMAINS){const button=el('button','chamber-portal');button.type='button';button.dataset.domain=domain.id;button.title=DOMAIN_SIGILS[domain.id].name;button.append(makeSigil(domain.id),el('span','',domain.name),el('small'));button.addEventListener('click',()=>this.visit(domain.id));this.tiles.set(domain.id,button);$('chamber-portals').append(button);}
   }
   team(){return this.worlds.team();}
   reportError(message){if($('chamber-dialog').open){this.feedback.textContent=message;this.feedback.dataset.error='true';}}
@@ -67,13 +68,13 @@ export class DomainChambers {
     const routeKey=key+':'+this.selected;if(this.routeKey!==routeKey){this.routeKey=routeKey;const s=place.stations[this.selected],x=s[1]*10,y=s[2]*6;$('chamber-routes').innerHTML=effects.filter(e=>e.node!==this.selected).map(e=>{const t=place.stations[e.node],nx=t[1]*10,ny=t[2]*6;return '<path class="selected" d="M'+x+' '+y+' Q500 290 '+nx+' '+ny+'"/><text x="'+(x+nx)/2+'" y="'+((y+ny)/2-10)+'">'+(e.delta>0?'+1':'−1')+'</text>';}).join('');}
     this.forecast.replaceChildren(...forecast.map((value,i)=>{const card=el('span',value===chamber.target[i]?'forecast-match':'');card.append(el('small','',String(i+1)+' / NEXT'),el('strong','',place.symbols[value]+' '+(value+1)));return card;}));
     this.passport.querySelector('summary').textContent=recovered===6?'✧ Six horizons united · 6/6 memories':'Expedition passport · '+recovered+'/6 memories';
-    const passportKey=state.code+':'+state.round+':'+team.id+':'+team.chambers.map(c=>c.completedAt).join(',');if(this.passportKey!==passportKey){this.passportKey=passportKey;this.passportBody.replaceChildren(...team.chambers.map(c=>{const d=getDomain(c.domain),done=c.completedAt!==null,card=el('article',done?'passport-stamp recovered':'passport-stamp');card.append(el('span','passport-symbol',done?d.symbol:'◇'),el('strong','',CHAMBERS[c.domain].title),el('p','',done?CHAMBERS[c.domain].memory:'Visit this room and align its landmarks to recover the memory.'));return card;}));}
+    const passportKey=state.code+':'+state.round+':'+team.id+':'+team.chambers.map(c=>c.completedAt).join(',');if(this.passportKey!==passportKey){this.passportKey=passportKey;this.passportBody.replaceChildren(...team.chambers.map(c=>{const d=getDomain(c.domain),done=c.completedAt!==null,card=el('article',done?'passport-stamp recovered':'passport-stamp');card.append(makeSigil(d.id,'passport-symbol'),el('small','sigil-catalogue',DOMAIN_SIGILS[d.id].name),el('strong','',CHAMBERS[c.domain].title),el('p','',done?CHAMBERS[c.domain].memory:'Visit this room and align its landmarks to recover the memory.'));return card;}));}
     $('chamber-selected').textContent=`0${this.selected+1} / ${place.stations[this.selected][0]}`;$('chamber-current').textContent=`${place.symbols[chamber.values[this.selected]]} ${chamber.values[this.selected]+1}`;$('chamber-target').textContent=`${place.symbols[chamber.target[this.selected]]} ${chamber.target[this.selected]+1}`;
     $('chamber-link-note').textContent=relayDescription(rule,this.selected,domain.id);
     $('chamber-tune').textContent=complete?'Memory recovered ✓':`${place.verb} ${place.object} ↗`;$('chamber-tune').disabled=complete||!state.me||this.isBusy();$('chamber-role-note').textContent=state.me?'Your team shares these landmarks. Tuning fixes your research team for this round.':'Host view · join a viewer seat to tune. Your team members share this room.';
     $('chamber-memory').hidden=!complete;$('chamber-memory').textContent=place.memory;
     const last=chamber.lastMove;$('chamber-last').textContent=last?`${last.avatar} ${last.name} tuned ${place.stations[last.node][0]}.`:'Select a landmark, read its link, then tune. Try coordinating one landmark per teammate.';
-    for(const [id,tile]of this.tiles){const c=team.chambers.find(c=>c.domain===id),done=Boolean(c&&c.completedAt!==null);tile.setAttribute('aria-pressed',String(id===domain.id));tile.setAttribute('aria-label',`Visit ${getDomain(id).name}${done?', memory recovered':''}`);tile.querySelector('small').textContent=done?'MEMORY RECOVERED ✓':`${c?.moves||0} tunes${id===team.domain?' · TEAM HOME':''}`;}
+    for(const [id,tile]of this.tiles){const c=team.chambers.find(c=>c.domain===id),done=Boolean(c&&c.completedAt!==null);tile.dataset.recovered=String(done);tile.setAttribute('aria-pressed',String(id===domain.id));tile.setAttribute('aria-label',`Visit ${getDomain(id).name}${done?', memory recovered':''}`);tile.querySelector('small').textContent=done?'MEMORY RECOVERED ✓':`${c?.moves||0} tunes${id===team.domain?' · TEAM HOME':''}`;}
     const signature=`${chamber.id}:${chamber.moves}`;if(this.signature&&this.signature!==signature){$('chamber-map').classList.remove('echo-arrival');void $('chamber-map').offsetWidth;$('chamber-map').classList.add('echo-arrival');}this.signature=signature;
   }
 }

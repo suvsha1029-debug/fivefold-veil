@@ -149,6 +149,7 @@ export class DomainScene {
   setEnabled(enabled) {
     this.enabled = Boolean(enabled);
     this.stage.dataset.motion = this.enabled ? 'on' : 'off';
+    document.body.dataset.effects = this.enabled ? 'on' : 'off';
     this.setRenderLabel();
     this.schedule();
     if (!enabled) this.draw();
@@ -165,6 +166,9 @@ export class DomainScene {
     this.stage.style.setProperty('--domain-accent',domain.accent);
     this.stage.style.setProperty('--guardian-hue',`${domain.hue}deg`);
     document.body.dataset.world=id;
+    document.body.style.setProperty('--world-sigil',`url("assets/sigils/${id}.png")`);
+    const portalSeal=document.getElementById('portal-seal');
+    if(portalSeal){portalSeal.src=`assets/sigils/${id}.png`;document.getElementById('portal-seal-domain').textContent=domain.name;}
     for(const [key,value]of Object.entries({base:domain.base,panel:domain.panel,raised:domain.raised,paper:domain.paper,ink:domain.ink,accent:domain.accent,art:`url("${domain.asset}")`}))document.body.style.setProperty(`--world-${key}`,value);
     document.getElementById('domain-coordinate').textContent = `DOMAIN 0${domain.mode+1} / ${domain.name.toUpperCase()}`;
     for (const button of document.querySelectorAll('[data-domain].domain-tab')) {
@@ -178,6 +182,7 @@ export class DomainScene {
   setState(status) {
     this.status = status;
     this.stage.dataset.caseStatus = status;
+    document.body.dataset.encounterStatus = status;
     this.updateNarrative();
     this.schedule();
   }
