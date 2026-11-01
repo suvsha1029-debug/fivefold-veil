@@ -212,3 +212,12 @@ Taiga and Lunar Waters also offer **Explore original 3D grove**, reusing the own
 Create a room, copy the viewer invite, optionally connect Twitch, then begin. Extra control/timer settings are expandable. Viewers join with a display name; the next-step card guides experiments, evidence and votes. Optional domains, Witness Seat and Council follow the main game. Reduced effects persist and respect system motion preferences. Shared-room updates arrive every three seconds; this is not a zero-latency claim.
 
 [DEMO_SCRIPT.md](DEMO_SCRIPT.md) contains a 2:50 recording plan, ready narration, OBS steps, real command templates and upload instructions. [QA_REPORT.md](QA_REPORT.md) separates local/browser verification from live Twitch proof and outstanding checks.
+
+
+### Guided mode and readable presentation
+
+The team portal header has **Guided mode** and a saved **Readable mode** toggle. Guided mode provides separate streamer, viewer and watching paths, with a highlighted control, arrow, plain-language explanation, Back/OK Next/Skip and a Show control focus shortcut. Moving through the guide never activates a game control. Escape closes it; F6 switches keyboard focus between the explanation and its control. Skipping preserves a resumable step, and finishing allows a fresh tour.
+
+Domain selection, domain chambers, the lounge, Twitch setup, viewer invitations, the private puzzle editor and the field guide also have **Guide this window**. Help stays inside the active window and returns to the main tour when the window closes. The guide adapts to paused rounds, host approvals, binding, finished games and read-only seats. It explains only public participation rules, never extracts private puzzle answers.
+
+Readable mode uses larger text, stronger panel contrast and a simpler layout, and holds decorative effects still. It preserves the separate effects preference when turned off. Still arrows are the default; optional slow border emphasis respects system reduced-motion and readable mode. Guidance uses event-driven positioning, with no extra network polling or animation loop while idle. These improvements have been browser-checked; they are not a claim of comprehensive assistive-technology certification.

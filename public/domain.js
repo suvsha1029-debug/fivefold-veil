@@ -148,7 +148,7 @@ export class DomainScene {
   }
 
   preferredEffects() {
-    return !this.motionQuery.matches && this.effectsPreference !== 'off' &&
+    return !document.body.classList.contains('readable-mode') && !this.motionQuery.matches && this.effectsPreference !== 'off' &&
       (this.effectsPreference === 'on' || !navigator.connection?.saveData);
   }
 
@@ -157,7 +157,7 @@ export class DomainScene {
       this.effectsPreference = enabled ? 'on' : 'off';
       try { localStorage.setItem('fivefold-effects-v1', this.effectsPreference); } catch {}
     }
-    this.enabled = Boolean(enabled) && !this.motionQuery.matches;
+    this.enabled = Boolean(enabled) && !this.motionQuery.matches && !document.body.classList.contains('readable-mode');
     this.stage.dataset.motion = this.enabled ? 'on' : 'off';
     document.body.dataset.effects = this.enabled ? 'on' : 'off';
     this.setRenderLabel();

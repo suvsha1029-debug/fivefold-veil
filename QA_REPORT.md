@@ -34,3 +34,13 @@ Domain lounge update adds four server regression tests, bringing the suite to 73
 - 76 automated tests passed, including new checks that time alone does not invalidate controls but evidence, votes, permissions and live content do. Syntax checks passed.
 - Local browser UI: created a small-crew room, copied a viewer invite, toggled reduced effects, started from the next-step button, joined a separate viewer tab, sent an experiment and recorded a theory vote. Mobile viewport showed no document overflow (375px content/client width with scrollbar). Optional panels remained collapsed through polls. These are browser guests, not a new live Twitch verification.
 - Real Twitch evidence from 31 October: broadcaster @shashu1029 authorized the app and sent `!test crown blue circle 2`. Production room J46MSAZ recorded FAIL and the broadcaster's contribution in its journal. This proves one real chat command reached gameplay; an independent-viewer complete round, live broadcast and final video remain unverified.
+
+
+## 1 November — optional guided mode
+
+- Added role-specific tours, pointer arrows, control outlines, Back/Next/Skip/Restart, keyboard focus shortcuts and resumable progress. Next only explains: a browser walkthrough of host startup left the encounter idle and its clock at 08:00.
+- Added contextual window tours for all seven dialogs. Browser checks covered Twitch setup and a lounge tour inside native modal windows, including restoring keyboard focus inside the still-open modal on Skip.
+- Added saved Readable mode with stronger opaque panels, larger type and still effects. Reload retained the preference and effects remained off. Still arrows are default and can be chosen independently.
+- Local browser checks: lobby Next/Back, Show control focused the intended input; F6 returned to the guide and Escape restored its launcher. Separate spectator and viewer seats received distinct tour paths. A 390px viewport had 375px client/content width (scrollbar), no horizontal document overflow and a visible arrow with its target clear of the guide card.
+- 83 automated tests passed, including seven guide-route tests for role/phase handling, modal permission boundaries, hidden/private-data independence and no state mutation. Existing room, council, lounge, Twitch and game tests remain green. Syntax checks passed.
+- No new live Twitch, viewer-load or screen-reader certification claim is made by these guide checks. The underlying real broadcaster command verification and outstanding independent-viewer full round remain as recorded above.

@@ -1,0 +1,75 @@
+/* Optional guidance stays above the page without blocking its controls. */
+.guide-focus{position:fixed;z-index:1001;pointer-events:none;border:3px solid #b9eedb;outline:2px solid #071117;outline-offset:2px;box-shadow:0 0 0 1px #dffcf3 inset;max-width:calc(100vw - 8px)}
+.guide-arrow{position:fixed;inset:0;width:100%;height:100%;z-index:1002;overflow:visible;pointer-events:none;filter:drop-shadow(0 1px 2px #030a0e)}
+.guide-arrow-line{fill:none;stroke:#c5f6e7;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.guide-arrow-head{fill:#c5f6e7;stroke:#0a171c;stroke-width:1;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.guide-card{position:fixed;z-index:1003;left:12px;bottom:12px;width:min(360px,calc(100vw - 24px));max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto;padding:18px;border:1px solid #bad2c9;border-radius:0;background:#101d24;color:#f5faf7;box-shadow:0 8px 28px #0008;font:16px/1.6 'Segoe UI',Arial,sans-serif;scrollbar-width:thin;overscroll-behavior:contain;overflow-wrap:anywhere}
+.guide-card[hidden],.guide-focus[hidden],.guide-arrow[hidden],.guide-card [hidden]{display:none!important}
+.guide-card:focus{outline:none}.guide-card:focus-visible{outline:3px solid #e5cf8a;outline-offset:3px}
+.guide-card .guide-progress{margin:0 0 8px;color:#cce9de;font:600 12px/1.5 'Segoe UI',Arial,sans-serif;letter-spacing:.7px;text-transform:uppercase}
+.guide-card .guide-title,.guide-card #guide-title{margin:0 0 8px;color:#f6fbf8;font:500 24px/1.25 Georgia,'Times New Roman',serif;letter-spacing:0}
+.guide-card .guide-description,.guide-card #guide-description{margin:0 0 12px;color:#e4eeea;font:16px/1.65 'Segoe UI',Arial,sans-serif}
+.guide-card .guide-target-note{margin:8px 0 12px;padding:8px 10px;border-inline-start:2px solid #d8c490;background:#1a2c34;color:#dfeae6;font:14px/1.6 'Segoe UI',Arial,sans-serif}
+.guide-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;align-items:stretch}
+.guide-card button{min-height:44px;min-width:44px;margin:0;padding:9px 12px;border:1px solid #aabfb7;border-radius:0;background:#1b3039;color:#f5faf7;font:600 14px/1.4 'Segoe UI',Arial,sans-serif;letter-spacing:0;white-space:normal;box-shadow:none}
+.guide-card button:hover:not(:disabled){background:#29434b;border-color:#dff8ed}.guide-card button:disabled{opacity:.58;cursor:not-allowed}
+.guide-card #guide-next{background:#dceee5;color:#13252c;border-color:#e5f4ed}.guide-card #guide-next:hover:not(:disabled){background:#f2fbf5}
+.guide-card #guide-skip{background:transparent;color:#dbe8e2;border-color:#607c7a}
+.guide-card :is(button,input):focus-visible{outline:3px solid #f2d488;outline-offset:3px}
+.guide-settings{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:14px;padding-top:12px;border-top:1px solid #57726d}
+.guide-settings label{display:flex;align-items:center;gap:10px;min-height:44px;color:#e5eeea;font:14px/1.5 'Segoe UI',Arial,sans-serif;cursor:pointer}
+.guide-settings input[type=checkbox]{flex:none;width:21px;height:21px;margin:0;accent-color:#b9e8d6}
+.guide-settings #guide-readability{flex:1;min-width:150px;font-size:13px}
+.guide-card-small .guide-body{display:none}
+.guide-motion .guide-focus{animation:guide-emphasis 4s ease-in-out infinite}
+@keyframes guide-emphasis{0%,100%{border-color:#b9eedb;box-shadow:0 0 0 1px #dffcf3 inset}50%{border-color:#f0ddb0;box-shadow:0 0 0 2px #f0ddb044 inset}}
+
+/* An explicit preference gives the whole room a quieter, larger reading view. */
+body.room-page.readable-mode{--bg:#10181e;--panel:#15232b;--raised:#22343e;--border:#a2b6bd;--text:#f7fafb;--muted:#e0e9ee;--gold:#f1dca2;--mint:#c3f2dc;--paper:#15232b;--ink:#f7fafb;--positive:#b9f1d2;--orange:#ffd3ad;--red:#ffb6bd;--blue:#b5dfff;--amber:#f5dfa6;--world-base:#10181e!important;--world-panel:#15232b!important;--world-raised:#22343e!important;--world-paper:#15232b!important;--world-ink:#f7fafb!important;--world-accent:#f1dca2!important;background:#10181e!important;color:#f7fafb!important;font-size:17px;line-height:1.75}
+body.room-page.readable-mode::before,body.room-page.readable-mode::after{display:none!important}
+.readable-mode .sigil-atmosphere,.readable-mode .sigil-map-dust,.readable-mode .domain-landscape,.readable-mode #domain-shader,.readable-mode .domain-vignette,.readable-mode .lounge-backdrop,.readable-mode .lounge-aurora,.readable-mode .lounge-particles,.readable-mode .lounge-orbit{display:none!important}
+.readable-mode *,.readable-mode *::before,.readable-mode *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important;text-shadow:none!important}
+.readable-mode :is(.panel,.lobby-card,.expedition-brief,.quick-controls,.room-help,.control-banner,.room-summary,.realm-strip,.host-desk,.proof-panel,.council,.witness-panel,.crew-outcome){background:#15232b!important;border-color:#91a9b3!important;color:#f7fafb!important;box-shadow:none!important;backdrop-filter:none!important}
+.readable-mode :is(.panel,.lobby-card,.realm-strip)::before,.readable-mode :is(.panel,.lobby-card,.realm-strip)::after{display:none!important}
+.readable-mode :is(p,label,button,input,select,textarea,.theory-copy strong,.theory-copy small,.panel-description,.team-instruction,.deck-hint,.identity-meta,.proof-status,.hint-actions>span,.brief-recap>strong,.council-help,.council-wallet,.witness-personal,.world-card small){font-size:16px!important;line-height:1.65!important;color:#eaf1f4!important}
+.readable-mode :is(.eyebrow,.quiet-tag,.room-summary,.world-meta,.crew-header nav a,.crew-footer,.stage-label,.oracle-topline,.domain-caption,.stage-coordinate,.oracle-clock>span,.render-label,.team-row small,.member-roster small,.member-roster>span,.identity-meta div,.theory-votes small,.council-summary,.witness-summary){font-size:13px!important;line-height:1.6!important;letter-spacing:.3px!important;color:#dce8ed!important}
+.readable-mode :is(button,input,select,textarea,summary){min-height:44px;max-width:100%}
+.readable-mode :is(input:not([type=checkbox]):not([type=radio]),select,textarea){background:#101a21!important;border:1px solid #b4cbd2!important;color:#f7fafb!important;padding:10px 12px!important}
+.readable-mode :is(button,.team-row,.world-card,.chamber-portal){border-color:#91a9b3!important;white-space:normal}
+.readable-mode :is(.outline-button,.text-button,.effects-button,.world-trigger,.avatar-key,.team-row,.discovery-chip,.emoji-key,.theory-card,.lock-button){background:#1c303c!important;color:#f5fafb!important;box-shadow:none!important}
+.readable-mode .primary-button,.readable-mode .guide-card #guide-next{background:#e8f4ef!important;color:#102029!important;border-color:#effcf7!important}
+.readable-mode :is(button[aria-pressed=true],.theory-card.selected){outline:2px solid #f1dca2;outline-offset:-3px;background:#2f424b!important;color:#fff!important}
+.readable-mode .theory-card.eliminated{background:#182127!important;border-style:dashed!important}.readable-mode .theory-card.eliminated .theory-copy{opacity:.85}
+.readable-mode .theory-letter{color:#ffeab5!important;border-color:#e3ce92!important}
+.readable-mode :is(button:disabled,select:disabled,input:disabled){opacity:.65!important}
+.readable-mode :is(a,button,summary,input,select,textarea):focus-visible{outline:3px solid #ffe197!important;outline-offset:4px!important}
+.readable-mode a{text-decoration:underline;text-underline-offset:3px}
+.readable-mode .crew-header{flex-wrap:wrap}.readable-mode .crew-header nav{flex-wrap:wrap}.readable-mode .crew-header nav a{display:flex;align-items:center;min-height:44px}
+.readable-mode .crew-grid{grid-template-columns:minmax(0,1fr)!important;gap:20px}.readable-mode .crew-centre{order:-2}.readable-mode .crew-theories{order:-1;grid-column:auto!important}
+.readable-mode .crew-theories .theory-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.readable-mode .crew-theories .theory-card{grid-template-columns:32px minmax(0,1fr) 38px;min-height:96px}
+.readable-mode .crew-identity,.readable-mode .proof-panel{padding:20px}.readable-mode .team-list{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}.readable-mode .team-row{padding:12px;min-width:0}
+.readable-mode .crew-arena .machine-stage{min-height:365px;background:#0b151c!important}.readable-mode .machine-output,.readable-mode .oracle-clock,.readable-mode .domain-caption{background:#101d25!important;border-color:#91a9b3!important}
+.readable-mode .machine-output strong{font-size:13px!important;line-height:1.5!important;color:#f5faf7!important}.readable-mode .domain-stage[data-result=pass] .machine-output strong{color:#b9f1d2!important}.readable-mode .domain-stage[data-result=fail] .machine-output strong{color:#ffd3ad!important}
+.readable-mode .room-journal .evidence-table-wrap{height:220px}.readable-mode table{font-size:16px}.readable-mode :is(th,td){font-size:15px!important;line-height:1.6!important;padding:11px 12px!important;color:#eaf1f4!important;background:#15232b!important}.readable-mode .result-tag{font-weight:700}
+.readable-mode .emoji-keyboard{gap:18px}.readable-mode .emoji-key{min-height:72px}.readable-mode .emoji-key>span{font-size:28px!important}.readable-mode .emoji-key small{font-size:15px!important;color:#f7fafb!important}.readable-mode .emoji-keyboard legend{font-size:15px!important;color:#f1dca2!important}
+.readable-mode :is(.crew-activity li,.member-roster p,.council-footnote,.lounge-chat-note,.lounge-message p,.lounge-subtitle,.chamber-description,.chamber-link-note,.chamber-role-note){font-size:16px!important;line-height:1.75!important;color:#eaf1f4!important}
+.readable-mode dialog{background:#15232b!important;color:#f7fafb!important;border:1px solid #b0c4cd!important;font-size:17px}.readable-mode dialog::backdrop{background:#04090ddc;backdrop-filter:none!important}
+.readable-mode dialog :is(h2,h3,h4,strong,summary){color:#f7fafb!important}.readable-mode dialog :is(code,.field-note,.client-label){font-size:15px!important;line-height:1.65!important;color:#eaf1f4!important}
+.readable-mode .guide-card{background:#101d24!important;color:#f5faf7!important;border-color:#bad2c9!important}.readable-mode .guide-card .guide-progress{font-size:13px!important}.readable-mode .guide-card #guide-title{font-size:24px!important;line-height:1.3!important}.readable-mode .guide-card #guide-description{font-size:16px!important}.readable-mode .guide-card .guide-target-note{font-size:14px!important}.readable-mode .guide-card button{font-size:16px!important;line-height:1.4!important}
+
+@media(max-width:680px){
+ .guide-card{padding:14px;width:calc(100vw - 24px);font-size:15px;line-height:1.5}.guide-card #guide-title{font-size:22px}.guide-card #guide-description{font-size:15px;line-height:1.55}.guide-card .guide-target-note{font-size:13px;margin:6px 0 8px}.guide-actions{gap:7px;margin-top:10px}.guide-actions button{flex:1 1 calc(50% - 7px);padding:9px 10px}.guide-settings{margin-top:10px;padding-top:8px}.guide-settings label{font-size:13px}.guide-settings #guide-readability{font-size:13px}
+ .readable-mode .crew-shell{padding-inline:12px}.readable-mode .crew-header{gap:10px}.readable-mode .crew-header nav{width:100%;justify-content:flex-start;gap:6px}.readable-mode .crew-header nav button{flex:1 1 auto;padding:8px}
+ .readable-mode .expedition-brief,.readable-mode .quick-controls{padding:16px}.readable-mode .brief-main h2{font-size:26px}.readable-mode .crew-theories .theory-list{grid-template-columns:minmax(0,1fr)}.readable-mode .crew-theories .theory-card{min-height:100px;grid-template-columns:32px minmax(0,1fr) 38px}
+ .readable-mode .team-list{grid-template-columns:repeat(2,minmax(0,1fr))}.readable-mode .team-row{flex-direction:row;align-items:flex-start;text-align:left}.readable-mode .team-row .team-size{display:none}.readable-mode .team-row .team-text{min-width:0}.readable-mode .team-row strong{font-size:18px}.readable-mode .team-row small{overflow-wrap:anywhere}
+ .readable-mode .room-actions{gap:8px}.readable-mode .room-actions>*{flex:1 1 calc(50% - 8px);text-align:center}.readable-mode .room-actions .outline-button,.readable-mode .room-actions .primary-button{padding:10px!important;min-height:48px!important;font-size:15px!important}
+ .readable-mode .emoji-keyboard{grid-template-columns:1fr}.readable-mode .emoji-key{min-height:60px}.readable-mode .deck-bottom{align-items:stretch}.readable-mode .world-gallery{grid-template-columns:1fr!important}.readable-mode .world-card-copy{min-height:0!important}
+ .readable-mode #domain-lounge{inset:8px;width:calc(100% - 16px);height:calc(100dvh - 16px)}.readable-mode .lounge-shell{padding-inline:12px}
+}
+@media(prefers-reduced-motion:reduce){.guide-focus,.guide-arrow,.guide-card,.guide-card *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media(forced-colors:active){.guide-focus{border-color:Highlight;outline-color:CanvasText;box-shadow:none}.guide-arrow-line{stroke:Highlight}.guide-arrow-head{fill:Highlight;stroke:CanvasText}.guide-card{background:Canvas;color:CanvasText;border-color:CanvasText;box-shadow:none}.guide-card :is(button,input){forced-color-adjust:auto}}
+
+/* Keep help controls reachable in a narrow browser panel. */
+.room-page .crew-header{flex-wrap:wrap}.room-page .crew-header nav{flex-wrap:wrap;align-items:center}
+.dialog-guide-button{min-height:44px;margin:4px 8px;flex-shrink:0}
+@media(max-width:680px){.room-page .crew-header nav{width:100%;justify-content:flex-start}.dialog-guide-button{white-space:normal}}
