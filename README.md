@@ -158,11 +158,11 @@ Browser guests and Twitch relay accounts are **separate identities**. They are n
 
 References: [Twitch app registration](https://dev.twitch.tv/docs/authentication/register-app/), [OAuth](https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#implicit-grant-flow), [EventSub](https://dev.twitch.tv/docs/eventsub/handling-websocket-events/).
 
-**Live Twitch and OBS validation remain required.** Tests use mocked Twitch services. Browser room testing does not prove a live broadcast or real independent viewers.
+**Real broadcaster OAuth and one real chat experiment were verified on 31 October.** Automated Twitch tests still use mocked services. An independent-viewer complete Twitch round, real reconnection/moderation and OBS broadcast remain to be verified; browser room testing does not prove those. See QA_REPORT.md and DEMO_SCRIPT.md.
 
 ## Hosting and access
 
-The same Sites project is retained in `.openai/hosting.json`; it now declares D1 binding `DB` instead of static hosting. The existing owner-private audience is preserved. A join code does not bypass Site access; external viewers need authorized access to the Site before joining. Do not describe the current private preview as publicly available to all Twitch viewers.
+The same Sites project is retained in `.openai/hosting.json`; it now declares D1 binding `DB` instead of static hosting. The existing restricted visitor allowlist is preserved. A join code does not bypass Site access; external viewers need authorized access to the Site before joining. Do not describe the current private preview as publicly available to all Twitch viewers.
 
 Capture the host browser window in OBS for the arena/controls, or a joined viewer browser for the keyboard and shared investigation. Separate room browsers synchronize through the server. The legacy solo rehearsal's **Stream view** remains a same-window capture layout, independent of room state.
 
@@ -205,3 +205,10 @@ Open **Enter domain lounge** from an expedition. Six shared conversations have d
 The meme wall displays that domain’s approved Council submissions after the reveal. Hosts can feature an entry on the Council stage. **Copy lounge invite** opens a spectator view at the selected domain.
 
 Taiga and Lunar Waters also offer **Explore original 3D grove**, reusing the owner’s Lunar Domain source. The optional Three.js bundle is loaded on request, rendered at a bounded frame rate and removed on exit. Its MIT attribution is retained in `public/assets/sanctuary/vendor/LICENSE`. Scenic backdrops stay available without starting the grove.
+
+
+### Quick operation and recording
+
+Create a room, copy the viewer invite, optionally connect Twitch, then begin. Extra control/timer settings are expandable. Viewers join with a display name; the next-step card guides experiments, evidence and votes. Optional domains, Witness Seat and Council follow the main game. Reduced effects persist and respect system motion preferences. Shared-room updates arrive every three seconds; this is not a zero-latency claim.
+
+[DEMO_SCRIPT.md](DEMO_SCRIPT.md) contains a 2:50 recording plan, ready narration, OBS steps, real command templates and upload instructions. [QA_REPORT.md](QA_REPORT.md) separates local/browser verification from live Twitch proof and outstanding checks.

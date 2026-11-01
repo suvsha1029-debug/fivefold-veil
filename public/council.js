@@ -7,8 +7,8 @@ const phases={predict:'01 / DISCUSS & BACK',showcase:'02 / THE REVEAL',vote:'03 
 export class Council{
   constructor({getState,isBusy,action,toast}){
     Object.assign(this,{getState,isBusy,action,toast});this.image='';this.signature='';
-    this.root=el('section','','council');this.root.id='council';this.root.setAttribute('aria-label','Council of streamers');
-    this.root.innerHTML=`<header class="council-heading"><div><p class="eyebrow">FIVEFOLD VEIL / COMMUNITY EVENTS</p><h2>The Council of Streamers</h2><p>Different communities. One table. Back a captain, defend a theory, or bring the meme of the night.</p></div><span class="council-phase">GATHER YOUR CAPTAINS</span></header>
+    this.root=el('details','','council');this.root.id='council';this.root.setAttribute('aria-label','Council of streamers');
+    this.root.innerHTML=`<summary class="council-disclosure"><strong>Council & memes</strong><span class="council-summary">Optional · bring communities together</span></summary><div class="council-content"><header class="council-heading"><div><p class="eyebrow">FIVEFOLD VEIL / COMMUNITY EVENTS</p><h2>The Council of Streamers</h2><p>Different communities. One table. Back a captain, defend a theory, or bring the meme of the night.</p></div><span class="council-phase">GATHER YOUR CAPTAINS</span></header>
       <div class="council-captains"></div>
       <p class="council-help"></p><p class="council-wallet council-private"></p>
       <details class="council-setup council-private" hidden><summary>Host desk · captains & new events</summary><p>1. Share each team’s join link with its streamer and audience. 2. Appoint a joined streamer as captain. 3. Open a theory council or meme intermission.</p><div class="council-appointments"></div>
@@ -21,8 +21,10 @@ export class Council{
       </div><div class="council-personal council-private" role="status"></div>
       <div class="council-stage" hidden aria-live="polite"></div><div class="council-theories"></div><div class="council-gallery"></div><div class="council-results" hidden></div>
       <details class="council-discussion council-private" hidden><summary>Team reasoning & consensus</summary><div></div></details></div>
-      <p class="council-footnote council-private">Confidence points are free game points: no purchase, transfer, cash-out or prizes. Correct picks return 2× the stake; cancellations refund it. Limits are per browser seat or relayed Twitch account, not per verified person.</p>`;
-    document.getElementById('realm-strip').before(this.root);this.q=s=>this.root.querySelector(s);
+      <p class="council-footnote council-private">Confidence points are free game points: no purchase, transfer, cash-out or prizes. Correct picks return 2× the stake; cancellations refund it. Limits are per browser seat or relayed Twitch account, not per verified person.</p></div>`;
+    (document.querySelector('.witness-panel')||document.querySelector('.crew-activity')).after(this.root);this.q=s=>this.root.querySelector(s);
+    document.querySelector('a[href="#council"]')?.addEventListener('click',()=>{this.root.open=true;});
+    if(location.hash==='#council')this.root.open=true;
     this.bind('.council-open',form=>({type:'open',kind:form.kind.value,eyeId:form.eyeId.value,title:form.title.value}));
     this.bind('.council-back',form=>({type:'back',team:form.team.value,stake:Number(form.stake.value)}));
     this.bind('.council-opinion',(form,event)=>({type:event.submitter?.value==='commit'?'commit':'opinion',option:form.option.value,reason:form.reason.value}));
@@ -50,7 +52,11 @@ export class Council{
   render(){
     const s=this.getState(),c=s?.council;if(!c)return;const e=c.event,me=s.me,host=s.isHost,playing=e&&!['results','cancelled'].includes(e.phase),predict=e?.phase==='predict';
     this.root.dataset.phase=e?.phase||'setup';
-    const key=s.code+':'+(e?.id||'');if(this.key!==key){this.key=key;this.signature='';this.image='';this.uploadGeneration=(this.uploadGeneration||0)+1;this.encoding=false;for(const f of this.root.querySelectorAll('.council-forms form'))f.reset();this.q('.council-upload-preview').hidden=true;this.q('.council-upload-status').textContent='';}
+    this.q('.council-summary').textContent=e?phases[e.phase]:'Optional · bring communities together';
+    const key=s.code+':'+(e?.id||'');if(this.key!==key){this.key=key;this.attentionSeen=new Set();this.signature='';this.image='';this.uploadGeneration=(this.uploadGeneration||0)+1;this.encoding=false;for(const f of this.root.querySelectorAll('.council-forms form'))f.reset();this.q('.council-upload-preview').hidden=true;this.q('.council-upload-status').textContent='';}
+    // Announce each new event or stage moment once; polling and expiry respect a manual collapse.
+    const attentionKeys=playing?[key,...(e.featured?[`${key}:${e.featured.id}:${e.featured.until}`]:[])]:[];
+    for(const attentionKey of attentionKeys)if(!this.attentionSeen.has(attentionKey)){this.attentionSeen.add(attentionKey);this.root.open=true;}
     this.q('.council-phase').textContent=e?phases[e.phase]:'GATHER YOUR CAPTAINS';this.q('.council-event').hidden=!e;this.q('.council-setup').hidden=!host;
     this.q('.council-help').textContent=!e?'Streamers join a viewer seat; the host appoints 2–5 captains. Share a team link with each community.':predict?'Back a captain now. Theory commitments and approved memes are revealed after predictions close.':e.phase==='showcase'?(e.kind==='theory'?'Commitments revealed. Investigate and seal the selected eye to resolve the council.':'The host presents each approved meme, then opens a 60-second audience vote.'):e.phase==='vote'?'Vote for your favourite meme. Each participating team contributes an equal share of the result.':e.phase==='cancelled'?'Event cancelled. All prediction stakes were refunded.':'Results are in. Review the winners and start another event from the host desk.';
     this.q('.council-wallet').textContent=me?`${c.myBalance} CONFIDENCE POINTS · ${c.myCaptain?'CAPTAIN / '+c.myCaptain.toUpperCase():'AUDIENCE / '+me.team.toUpperCase()}`:host?'HOST / EVENT DIRECTOR · Open a viewer seat if you also want to captain a team.':'WATCHING / Join a viewer seat to participate.';

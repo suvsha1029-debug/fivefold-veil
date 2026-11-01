@@ -22,7 +22,7 @@ export class DomainLounge {
     this.domain = 'taiga';
     this.chatSignature = '';
     this.memeSignature = '';
-    this.motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.motion = scene.enabled;
     this.dialog = node('dialog', 'domain-lounge');
     this.dialog.id = 'domain-lounge';
     this.dialog.setAttribute('aria-labelledby', 'lounge-title');
@@ -137,9 +137,16 @@ export class DomainLounge {
     this.q('.lounge-sound').addEventListener('click', () => this.toggleAudio());
     this.q('.lounge-volume').addEventListener('input', event => this.audio.setVolume(Number(event.target.value)));
     this.q('.lounge-motion').addEventListener('click', () => {
-      this.motion = !this.motion;
+      if (!this.scene.enabled) this.scene.setEnabled(true);
+      else this.motion = !this.motion;
       this.updateMotion();
     });
+    this.onEffectsChange = event => {
+      this.motion = event.detail.enabled;
+      if (!this.motion) this.removeGrove();
+      this.updateMotion();
+    };
+    document.addEventListener('fivefold:effects-change', this.onEffectsChange);
     this.q('.lounge-grove-toggle').addEventListener('click', () => this.toggleGrove());
     for (const button of this.dialog.querySelectorAll('[data-view]')) {
       button.addEventListener('click', () => {
@@ -162,7 +169,8 @@ export class DomainLounge {
     window.addEventListener('message', this.onGroveMessage);
     this.q('.lounge-council').addEventListener('click', () => {
       this.dialog.close();
-      document.getElementById('council').scrollIntoView({ block: 'start', behavior: this.motion ? 'smooth' : 'instant' });
+      const council=document.getElementById('council');council.open=true;
+      council.scrollIntoView({ block: 'start', behavior: this.motion ? 'smooth' : 'instant' });
     });
     this.q('.lounge-join').addEventListener('click', () => {
       this.dialog.close();
@@ -239,8 +247,9 @@ export class DomainLounge {
   }
 
   updateMotion() {
-    this.dialog.dataset.motion = String(this.motion && !document.hidden && this.dialog.open);
-    this.q('.lounge-motion').textContent = this.motion ? 'Pause atmosphere' : 'Resume atmosphere';
+    this.dialog.dataset.motion = String(this.motion && this.scene.enabled && !document.hidden && this.dialog.open);
+    this.q('.lounge-motion').textContent = this.scene.motionQuery.matches ? 'Still atmosphere · reduced motion' : this.motion ? 'Pause atmosphere' : 'Resume atmosphere';
+    this.q('.lounge-motion').disabled = this.scene.motionQuery.matches;
     this.q('.lounge-motion').setAttribute('aria-pressed', String(!this.motion));
     this.syncGrove();
   }
@@ -398,6 +407,7 @@ export class DomainLounge {
 
   destroy() {
     this.removeGrove();
+    document.removeEventListener('fivefold:effects-change', this.onEffectsChange);
     window.removeEventListener('message', this.onGroveMessage);
     this.audio.destroy();
   }

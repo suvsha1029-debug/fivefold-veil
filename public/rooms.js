@@ -4,6 +4,7 @@ import { TeamWorlds } from './team-worlds.js';
 import { DomainChambers } from './chambers.js';
 import { getDomain, validDomain } from './domains.js';
 import { roomGuidance } from './room-guidance.js';
+import { roomContentKey } from './room-render-state.js';
 import { HostDesk } from './host-desk.js';
 import { WitnessSeat } from './witness-seat.js';
 import { Council } from './council.js';
@@ -19,6 +20,7 @@ let session=null,state=null,selectedEye='heart',avatar='🦊',busy=false,polling
 let pendingChamber=null;
 let audienceView=false;
 let hostChoices={};
+let contentKey='';
 let oauth=null;try{oauth=consumeTwitchLogin();}catch(error){setTimeout(()=>toast(error.message,true),0);}
 const scene=new DomainScene();
 const keyboard=new EmojiKeyboard($('emoji-keyboard'),{onChange:renderKeyboard,onSubmit:()=>sendSignal()});
@@ -28,6 +30,7 @@ const hostDesk=new HostDesk({getState:()=>state,isBusy:()=>busy,action,toast});
 const witness=new WitnessSeat({getState:()=>state,isBusy:()=>busy,action,toast});
 const council=new Council({getState:()=>state,isBusy:()=>busy,action,toast});
 const lounge=new DomainLounge({getState:()=>state,isBusy:()=>busy,action,toast,scene,worlds});
+document.querySelector('.crew-activity').after($('realm-strip'));
 const requestId=()=>crypto.randomUUID();
 function toast(message,error=false){clearTimeout(toastTimer);$('toast').textContent=message;$('toast').classList.toggle('error',error);$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,6000);}
 function readStore(storage,key){try{return JSON.parse(storage.getItem(key)||'{}');}catch{return {};}}
@@ -51,15 +54,17 @@ function showRoomLoadError(error){
 function applyState(next){
   if(state&&state.code===next.code&&next.serverNow<state.serverNow)return;
   const changed=state?.code!==next.code||state?.round!==next.round||state?.puzzleRevision!==next.puzzleRevision;
+  const nextKey=roomContentKey(next),needsRender=changed||contentKey!==nextKey||!$('room-banner').hidden;
+  contentKey=nextKey;
   state=next;receivedAt=Date.now();
   if(changed){selectedEye=state.me?.team||'heart';theorySignature=proofSignature=activitySignature='';hostChoices={};}
   $('room-sync').replaceChildren(node('span','sync-dot'),document.createTextNode('Synced · updates every 3s'));
-  $('room-banner').hidden=true;render();
+  $('room-banner').hidden=true;if(needsRender)render();else renderClock();
 }
 function enter(value,next){
   $('room-load-error').hidden=true;
   session=value;
-  state=null;
+  state=null;busy=false;contentKey='';
   if(value.role!=='spectator')remember(value);
   audienceView=value.role==='spectator';
   const url=new URL(location.pathname,location.origin);
@@ -81,10 +86,10 @@ function enter(value,next){
   }
 }
 async function action(path,body){
-  if(!session||busy)return null;busy=true;renderKeyboard();chambers.render();hostDesk.render();witness.render();council.render();lounge.render();
-  try{const response=await api(`/${session.code}/${path}`,{method:'POST',body:{...body,requestId:requestId()}});applyState(response.state);return response.result;}
-  catch(error){toast(error.message,true);chambers.reportError(error.message);lounge.reportError(error.message);return null;}
-  finally{busy=false;render();}
+  if(!session||busy)return null;const seat=session;busy=true;render();
+  try{const response=await api(`/${seat.code}/${path}`,{method:'POST',token:seat.token,body:{...body,requestId:requestId()}});if(session!==seat)return null;applyState(response.state);return response.result;}
+  catch(error){if(session!==seat)return null;toast(error.message,true);chambers.reportError(error.message);lounge.reportError(error.message);return null;}
+  finally{if(session===seat){busy=false;if(state)render();}}
 }
 async function refresh(){
   if(!session||polling||busy)return;
@@ -133,8 +138,8 @@ function renderTheories(){
   const showDiscovery=binding||eye.sealed||ended;
   $('room-theories').hidden=showDiscovery;$('room-discoveries').hidden=!showDiscovery;
   if(showDiscovery){
-    const discoveries=binding?g.eyes:[eye];$('room-discoveries').replaceChildren(...discoveries.map(e=>{const card=node('div','sealed-discovery');card.append(node('h3','',`${e.mark} ${e.name}`),node('p','',e.discovery||'This eye’s rule remains unknown.'));return card;}));
-    if(binding){const title=node('h3','','Community proposals');$('room-discoveries').append(title,...(g.binding.length?g.binding.map(p=>{const row=node('div','binding-proposal');row.append(node('code','',`${signalEmoji(p.signal)} · ${p.signal.color} ${p.signal.shape} ${p.signal.pulses}`),node('span','',`${p.votes} votes`));return row;}):[node('p','binding-empty','No binding proposals yet. Use your emoji keyboard.')]));}
+    const discoveries=binding?g.eyes:[eye],key=JSON.stringify([state.code,state.round,discoveries.map(e=>[e.id,e.discovery]),binding,g.binding]);if($('room-discoveries').dataset.signature!==key){$('room-discoveries').dataset.signature=key;$('room-discoveries').replaceChildren(...discoveries.map(e=>{const card=node('div','sealed-discovery');card.append(node('h3','',`${e.mark} ${e.name}`),node('p','',e.discovery||'This eye’s rule remains unknown.'));return card;}));
+    if(binding){const title=node('h3','','Community proposals');$('room-discoveries').append(title,...(g.binding.length?g.binding.map(p=>{const row=node('div','binding-proposal');row.append(node('code','',`${signalEmoji(p.signal)} · ${p.signal.color} ${p.signal.shape} ${p.signal.pulses}`),node('span','',`${p.votes} votes`));return row;}):[node('p','binding-empty','No binding proposals yet. Use your emoji keyboard.')]));}}
   }else{
     const sig=`${state.round}:${selectedEye}`;if(sig!==theorySignature){theorySignature=sig;$('room-theories').replaceChildren(...eye.options.map(option=>{const button=node('button','theory-card');button.type='button';button.dataset.option=option.id;const copy=node('span','theory-copy');copy.append(node('strong','',option.label||`Theory ${option.id.toUpperCase()}`),node('small','',option.description));const votes=node('span','theory-votes');votes.append(node('span','count'),node('small','','VOTES'));button.append(node('span','theory-letter',option.id.toUpperCase()),copy,votes);button.addEventListener('click',async()=>{if(state.isHost&&state.controlMode==='host'){hostChoices[selectedEye]=option.id;renderTheories();return;}const result=await action('command',{text:`!solve ${selectedEye} ${option.id}`});if(result)toast('Your theory vote is recorded.');});return button;}));}
     for(const option of eye.options){const button=$('room-theories').querySelector(`[data-option="${option.id}"]`);button.disabled=busy||!running||option.eliminated||(!director&&(!state.me||!state.me.eligible.includes(selectedEye)));button.classList.toggle('eliminated',option.eliminated);const chosen=(director?hostChoices[selectedEye]:state.me?.votes[selectedEye])===option.id;button.classList.toggle('selected',chosen);button.setAttribute('aria-pressed',String(chosen));button.setAttribute('aria-label',`Theory ${option.id.toUpperCase()}: ${option.description}${option.eliminated?' Eliminated.':''}`);button.querySelector('.count').textContent=option.eliminated?'×':option.votes;button.querySelector('.theory-votes small').textContent=option.eliminated?'OUT':'VOTES';}
@@ -163,6 +168,13 @@ function renderClock(){if(!state)return;witness.tick(state.serverNow+Date.now()-
 function renderGuidance(){
   const g=state.game,guide=roomGuidance(state,selectedEye),eye=g.eyes.find(e=>e.id===selectedEye);
   $('next-step-title').textContent=guide.title;$('next-step-detail').textContent=guide.detail;
+  $('brief-role').textContent=state.isHost?'YOUR NEXT STEP / STREAMER':state.me?'YOUR NEXT STEP / VIEWER':'WATCHING / LIVE EXPEDITION';
+  const actionLabels={'host-start':g.status==='paused'?'Resume encounter →':'Begin encounter →','room-outcome':'Review the outcome →','room-theories':'Compare theories & vote →','host-seal':g.phase==='binding'?'Review final binding →':'Review leading theory →','host-desk':'Review experiment requests →','emoji-keyboard':g.phase==='binding'?'Compose the final signal →':'Compose an experiment →','proof-panel':'Link existing evidence →','team-list':'Choose another eye →','watch-join':'Join this expedition →','host-hint':'Share a helpful nudge →'};
+  $('next-step-action').textContent=actionLabels[guide.target]||'Go to the next step →';$('next-step-action').disabled=busy;
+  $('quick-role').textContent=state.isHost?'STREAMER · Invite viewers, connect chat if you want, then begin.':state.me?'VIEWER · Try a signal, compare the result, then vote.':'WATCHING · Follow the journal or join whenever you want.';
+  $('quick-invite').hidden=!state.isHost;$('quick-play').hidden=(!state.isHost&&!state.me)||['won','lost'].includes(g.status);$('quick-play').disabled=busy;
+  $('quick-status').textContent=busy?'Saving your action…':'';
+  $('room-view').setAttribute('aria-busy',String(busy));
   $('round-recap').textContent=guide.recap;$('latest-evidence').textContent=guide.last;
   $('next-step-action').dataset.target=guide.target;
   $('next-step-action').hidden=!state.isHost&&!state.me||['won','lost'].includes(g.status)||(!state.isHost&&g.status!=='running');
@@ -191,11 +203,18 @@ function renderGuidance(){
 }
 $('next-step-action').addEventListener('click',()=>{
   const target=$($('next-step-action').dataset.target);if(!target)return;
+  if(target.id==='host-start'&&!target.disabled){target.click();return;}
   if(target.matches('details'))target.open=true;
   target.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'center'});
   const focus=target.matches('button')?target:target.querySelector('button:not(:disabled),select:not(:disabled)');focus?.focus({preventScroll:true});
 });
 $('request-hint').addEventListener('click',async()=>{const r=await action('hint-request',{eyeId:selectedEye});if(r)toast(r.message);});
+$('quick-play').addEventListener('click',()=>{document.querySelector('.expedition-brief').scrollIntoView({block:'center',behavior:scene.enabled?'smooth':'instant'});if(!$('next-step-action').hidden)$('next-step-action').focus({preventScroll:true});});
+$('quick-invite').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(joinUrl(state.code));toast('Viewer invite copied. Share it with your crew.');}catch{$('invite-button').click();toast('Copy the viewer link from this window.');}});
+function syncPerformanceButton(){const reduced=scene.motionQuery.matches;$('performance-button').textContent=reduced?'Reduced effects: system setting':`Reduced effects: ${scene.enabled?'off':'on'}`;$('performance-button').setAttribute('aria-pressed',String(!scene.enabled));$('performance-button').disabled=reduced;$('effects-button').disabled=reduced;}
+document.addEventListener('fivefold:effects-change',syncPerformanceButton);
+$('performance-button').addEventListener('click',()=>{scene.setEnabled(!scene.enabled);chambers.render();});
+syncPerformanceButton();
 $('host-hint').addEventListener('click',()=>action('control',{type:'hint',eyeId:selectedEye}));
 $('clear-hint').addEventListener('click',()=>action('control',{type:'clearHint'}));
 $('audience-view').addEventListener('click',()=>{audienceView=!audienceView;renderGuidance();});
@@ -208,7 +227,7 @@ function render(){
   if(!state)return;const g=state.game,me=state.me,host=state.isHost,eye=g.eyes.find(e=>e.id===selectedEye),ended=['won','lost'].includes(g.status);
   $('expedition-title').textContent=state.title;$('room-code').textContent=state.code;$('room-eyebrow').textContent=`EXPEDITION ROOM / ROUND ${state.round}`;
   $('room-source').textContent=state.twitchChannel?state.source+' · '+channelDescription(state.channelInfo):state.source;$('room-members').textContent=`${state.members.length} member${state.members.length===1?'':'s'}`;$('room-progress').textContent=`${g.sealedCount}/5 eyes sealed`;$('room-pledges').textContent=`${state.activeTeams} contributing teams · minimum ${state.minimumTeams??2}`;$('room-fractures').textContent=`${g.strikes}/3 fractures`;
-  $('host-start').hidden=!host;$('host-start').disabled=ended;$('host-start').textContent=g.status==='running'?'Hold the clock Ⅱ':g.status==='paused'?'Resume encounter ↗':'Begin encounter ↗';$('host-reset').hidden=!host;$('room-twitch-button').hidden=!host;$('viewer-seat').hidden=!host;$('viewer-seat').href=joinUrl(state.code);
+  $('host-start').hidden=!host;$('host-start').disabled=busy||ended;$('host-start').textContent=g.status==='running'?'Hold the clock Ⅱ':g.status==='paused'?'Resume encounter ↗':'Begin encounter ↗';$('host-reset').hidden=!host;$('host-reset').disabled=busy;$('room-twitch-button').hidden=!host;$('viewer-seat').hidden=!host;$('viewer-seat').href=joinUrl(state.code);
   $('room-twitch-button').textContent=connection.state==='connected'?`Twitch: @${connection.channel}`:'Connect Twitch';
   $('my-name').textContent=me?.name||(host?'Expedition host':'Watching the expedition');$('my-avatar').textContent=me?.avatar||'✧';const team=me&&state.teams.find(t=>t.eyeId===me.team);
   $('my-identity').replaceChildren(node('div','',me?`MEMBER / ${me.id}`:host?'HOST / PRIVATE CONTROL KEY':'WATCHING / NO VIEWER SEAT'),node('div','',team?`TEAM / ${team.id}`:`ROOM / ${state.code}`),node('div','',me?(me.source==='browser'?'Browser guest · not Twitch-verified':'Twitch host relay'):host?'Share the viewer link, never your host key.':'Join only if you want to contribute.'));
@@ -219,9 +238,9 @@ function render(){
   const last=eye.experiments.at(-1);$('room-output-symbol').textContent=g.status==='won'?'✧':last?(last.accepted?'✓':'×'):'?';$('room-output-text').textContent=g.status==='won'?'VEIL OPENED':last?(last.accepted?'ACCEPTED':'REJECTED'):'AWAITING SIGNAL';$('machine-stage').dataset.result=g.status==='won'?'pass':last?(last.accepted?'pass':'fail'):'idle';
   renderTeams();renderKeyboard();renderTheories();renderProof();renderGuidance();hostDesk.render();witness.render();council.render();lounge.render();
   $('room-twitch-button').hidden=!state.canRelay;
-  let roster=$('member-roster');if(!roster){roster=node('div','member-roster');roster.id='member-roster';document.querySelector('.crew-identity').append(roster);}const members=state.members.filter(m=>m.team===(me?.team||selectedEye));roster.replaceChildren(node('span','','TEAM ROSTER'),...members.slice(0,8).map(m=>{const item=node('p','',`${m.avatar} ${m.name}`);item.append(node('small','',m.id));return item;}));if(!members.length)roster.append(node('p','','No one has joined this team yet.'));
+  let roster=$('member-roster');if(!roster){roster=node('div','member-roster');roster.id='member-roster';document.querySelector('.crew-identity').append(roster);}const members=state.members.filter(m=>m.team===(me?.team||selectedEye)),rosterKey=JSON.stringify([state.code,members]);if(roster.dataset.signature!==rosterKey){roster.dataset.signature=rosterKey;roster.replaceChildren(node('span','','TEAM ROSTER'),...members.slice(0,8).map(m=>{const item=node('p','',`${m.avatar} ${m.name}`);item.append(node('small','',m.id));return item;}));if(!members.length)roster.append(node('p','','No one has joined this team yet.'));}
   $('journal-count').textContent=`${g.experiments.length}/30 EXPERIMENTS`;$('room-journal-empty').hidden=!!g.experiments.length;$('room-journal-table').hidden=!g.experiments.length;
-  $('room-evidence').replaceChildren(...g.experiments.slice().reverse().map(e=>{const row=node('tr');row.append(node('td','',`${e.sequence} / ${e.eyeId}`),node('td','',signalEmoji(e)),node('td','',e.name),node('td',`result-tag${e.accepted?'':' fail'}`,e.accepted?'✓ PASS':'× FAIL'));return row;}));
+  const journalKey=JSON.stringify([state.code,state.round,g.experiments]);if($('room-evidence').dataset.signature!==journalKey){$('room-evidence').dataset.signature=journalKey;$('room-evidence').replaceChildren(...g.experiments.slice().reverse().map(e=>{const row=node('tr');row.append(node('td','',`${e.sequence} / ${e.eyeId}`),node('td','',signalEmoji(e)),node('td','',e.name),node('td',`result-tag${e.accepted?'':' fail'}`,e.accepted?'✓ PASS':'× FAIL'));return row;}));}
   const latest=state.activity[0]?.id||'';if(latest!==activitySignature){activitySignature=latest;$('room-activity').replaceChildren(...state.activity.slice(0,6).map(a=>{const row=node('li');row.append(node('strong','',`${a.avatar} ${a.name}`),document.createTextNode(` · ${a.source==='browser'?'browser guest':a.source==='twitch'?'Twitch relay':'host'}${a.team?` / ${a.team}`:''}`),node('div','',a.text));return row;}));}
   $('room-outcome').hidden=!ended;if(ended){$('room-outcome-title').textContent=g.status==='won'?'Your teams opened the veil.':g.remainingMs===0?'The veil has closed.':'The veil has fractured.';$('room-outcome-text').textContent=g.status==='won'?`${signalEmoji(g.finalSignal)} · ${g.finalSignal.color} ${g.finalSignal.shape} ${g.finalSignal.pulses}. ${g.participants} evidence contributors across ${state.activeTeams} teams.`:`${g.endReason} ${g.sealedCount}/5 discoveries secured. The host can begin a new round with the same room IDs.`;}
 }
@@ -234,15 +253,15 @@ $('copy-invite').addEventListener('click',async()=>{try{await navigator.clipboar
 
 const twitch=new TwitchChat({onMessage:message=>{
   if(!session||!state?.canRelay||(!state.isHost&&/^!spotlight\s/i.test(message.text))||!(/^!(team|domain|tune|test|solve|cite|bind|focus|hint|seal|spotlight|back|opinion|memevote)\s/i.test(message.text)||/^!confirmbind$/i.test(message.text.trim())))return;
-  api(`/${session.code}/twitch`,{method:'POST',body:{text:message.text,userId:message.id,name:message.name,messageId:message.messageId,sentAt:message.sentAt,channel:connection.channel,requestId:requestId()}}).then(response=>{applyState(response.state);if(response.result?.kind==='test')scene.pulse(response.result.experiment.accepted);}).catch(error=>toast(error.message,true));
+  const seat=session;api(`/${seat.code}/twitch`,{method:'POST',token:seat.token,body:{text:message.text,userId:message.id,name:message.name,messageId:message.messageId,sentAt:message.sentAt,channel:connection.channel,requestId:requestId()}}).then(response=>{if(session!==seat)return;applyState(response.state);if(response.result?.kind==='test')scene.pulse(response.result.experiment.accepted);}).catch(error=>{if(session===seat)toast(error.message,true);});
 },onModeration:event=>{
-  if(!session||!state?.canRelay)return;
-  if(state.council?.event)api(`/${session.code}/council-moderation`,{method:'POST',body:{...event,channel:connection.channel,requestId:requestId()}}).then(response=>applyState(response.state)).catch(()=>toast('Council moderation could not sync. The event host can cancel the round if needed.',true));
+  if(!session||!state?.canRelay)return;const seat=session;
+  if(state.council?.event)api(`/${seat.code}/council-moderation`,{method:'POST',token:seat.token,body:{...event,channel:connection.channel,requestId:requestId()}}).then(response=>{if(session===seat)applyState(response.state);}).catch(()=>{if(session===seat)toast('Council moderation could not sync. The event host can cancel the round if needed.',true);});
   if(!state.isHost)return;
-  api(`/${session.code}/witness-moderation`,{method:'POST',body:{...event,requestId:requestId()}}).then(response=>applyState(response.state)).catch(()=>{toast('Chat moderation could not sync. Turning off spotlights; reconnect before using them.',true);action('witness',{type:'enable',enabled:false});});
+  api(`/${seat.code}/witness-moderation`,{method:'POST',token:seat.token,body:{...event,requestId:requestId()}}).then(response=>{if(session===seat)applyState(response.state);}).catch(()=>{if(session!==seat)return;toast('Chat moderation could not sync. Turning off spotlights; reconnect before using them.',true);action('witness',{type:'enable',enabled:false});});
 },onStatus:next=>{
   connection=next;$('room-twitch-status').textContent=next.message||next.state;$('room-twitch-form').hidden=next.state==='connected';$('room-twitch-disconnect').hidden=next.state!=='connected';
-  if(next.state==='connected'){toast(`Twitch connected: @${next.channel}. Council commands: !back crown 1, !opinion a your reason, !memevote m1.`);if(session&&state?.canRelay)api(`/${session.code}/council`,{method:'POST',body:{type:'connect',channel:next.channel,info:next.info,requestId:requestId()}}).then(response=>applyState(response.state)).catch(error=>toast(error.message,true));if($('room-twitch-dialog').open)$('room-twitch-dialog').close();}
+  if(next.state==='connected'){const seat=session;toast(`Twitch connected: @${next.channel}. Council commands: !back crown 1, !opinion a your reason, !memevote m1.`);if(session&&state?.canRelay)api(`/${session.code}/council`,{method:'POST',body:{type:'connect',channel:next.channel,info:next.info,requestId:requestId()}}).then(response=>{if(session===seat)applyState(response.state);}).catch(error=>{if(session===seat)toast(error.message,true);});if($('room-twitch-dialog').open)$('room-twitch-dialog').close();}
   if(['error','reconnecting'].includes(next.state)&&state?.game.status==='running'&&state?.isHost)action('control',{type:'pause'});
   if(state)render();
 }});

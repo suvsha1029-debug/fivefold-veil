@@ -68,8 +68,9 @@ export class DomainScene {
     this.ring = document.getElementById('ring-progress');
     this.clock = document.getElementById('domain-clock');
     this.motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
-    this.enabled = !this.motionQuery.matches;
-    this.visible = true;
+    try { this.effectsPreference = localStorage.getItem('fivefold-effects-v1'); } catch {}
+    this.enabled = this.preferredEffects();
+    this.visible = this.stage.getClientRects().length > 0;
     this.status = 'idle';
     this.theme = null;
     this.urgency = 0;
@@ -84,7 +85,7 @@ export class DomainScene {
     this.selectedEye = 'heart';
     this.phase = 'investigation';
     this.onVisibility = () => this.schedule();
-    this.onPreference = event => { this.setEnabled(!event.matches); };
+    this.onPreference = () => { this.setEnabled(this.preferredEffects(), { persist: false }); };
     document.addEventListener('visibilitychange', this.onVisibility);
     this.motionQuery.addEventListener('change', this.onPreference);
     this.emblem.addEventListener('load', () => { this.svgMessage = ''; this.syncEmblem(); });
@@ -95,7 +96,7 @@ export class DomainScene {
     this.canvas.addEventListener('webglcontextlost', event => { event.preventDefault(); cancelAnimationFrame(this.frame); this.frame = 0; this.gl = null; this.stage.dataset.renderer = 'still'; this.setRenderLabel(); });
     this.canvas.addEventListener('webglcontextrestored', () => { this.initialize(); this.schedule(); });
     this.initialize();
-    this.setEnabled(this.enabled);
+    this.setEnabled(this.enabled, { persist: false });
     this.setTheme('taiga');
   }
 
@@ -146,13 +147,23 @@ export class DomainScene {
     document.getElementById('effects-button').setAttribute('aria-pressed', String(this.enabled));
   }
 
-  setEnabled(enabled) {
-    this.enabled = Boolean(enabled);
+  preferredEffects() {
+    return !this.motionQuery.matches && this.effectsPreference !== 'off' &&
+      (this.effectsPreference === 'on' || !navigator.connection?.saveData);
+  }
+
+  setEnabled(enabled, { persist = true } = {}) {
+    if (persist) {
+      this.effectsPreference = enabled ? 'on' : 'off';
+      try { localStorage.setItem('fivefold-effects-v1', this.effectsPreference); } catch {}
+    }
+    this.enabled = Boolean(enabled) && !this.motionQuery.matches;
     this.stage.dataset.motion = this.enabled ? 'on' : 'off';
     document.body.dataset.effects = this.enabled ? 'on' : 'off';
     this.setRenderLabel();
     this.schedule();
-    if (!enabled) this.draw();
+    if (!this.enabled) this.draw();
+    document.dispatchEvent(new CustomEvent('fivefold:effects-change', { detail: { enabled: this.enabled } }));
   }
 
   setChamberOpen(open) { this.chamberOpen=Boolean(open); this.schedule(); }
@@ -205,7 +216,7 @@ export class DomainScene {
   }
 
   updateClock(remainingMs, durationMs, text) {
-    this.clock.textContent = text;
+    if(this.clock.textContent!==text)this.clock.textContent = text;
     const ratio = Math.max(0, Math.min(1, remainingMs / durationMs));
     this.ring.style.strokeDashoffset = String((1 - ratio) * 100);
     this.urgency = this.status === 'running' ? Math.max(0, 1 - remainingMs / 30000) : 0;
@@ -219,7 +230,7 @@ export class DomainScene {
 
   syncEmblem() {
     // Only public visual flags cross into the sandbox; never rules, tokens, or chat.
-    const paused = !this.enabled || document.hidden || (!this.visible&&!this.chamberOpen) || ['paused','won','lost'].includes(this.status);
+    const paused = !this.enabled || document.hidden || document.body.classList.contains('in-lounge') || (!this.visible&&!this.chamberOpen) || ['paused','won','lost'].includes(this.status);
     const message = JSON.stringify({ type: 'signal-lab:scene', paused, eyes: this.eyeStates, focus: this.selectedEye, hue:getDomain(this.theme).hue });
     if (message !== this.svgMessage) {
       this.svgMessage = message;

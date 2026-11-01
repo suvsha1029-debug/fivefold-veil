@@ -23,3 +23,14 @@ node scripts/browser-qa.mjs
 ```
 
 Domain lounge update adds four server regression tests, bringing the suite to 73. Separate host, member and mobile spectator browser sessions verified shared messages, domain isolation, role controls, literal text, deep links and audio activation. The native audio instrumentation measured no activation before clicking, one reused AudioContext after enabling and suspension on exit. An additional browser check loaded the original grove, switched viewpoint, removed it when leaving Lunar and confirmed 390px layout without horizontal overflow.
+
+
+## 1 November — easier operation and reduced visual work
+
+- Optional timer/control settings and domain registry start collapsed. Primary streamer/viewer next steps have specific action labels; a host can begin/resume directly from the guide. Viewer invites have a one-click copy shortcut.
+- Team worlds, Witness Seat and Council follow the core investigation. Witness/Council disclosures open once for new earned/live moments, while polling respects a manual collapse.
+- Clock-only polls update timing without rebuilding the interactive view. Journal, roster and discovery DOM are retained when their contents have not changed. Mutations ignore responses from a room/seat that has since been left.
+- Reduced effects persist across refreshes, honor system reduced-motion/data saving, and also stop lounge motion/optional 3D. Audio remains separately opt-in. No new latency/FPS or viewer-load claim is made.
+- 76 automated tests passed, including new checks that time alone does not invalidate controls but evidence, votes, permissions and live content do. Syntax checks passed.
+- Local browser UI: created a small-crew room, copied a viewer invite, toggled reduced effects, started from the next-step button, joined a separate viewer tab, sent an experiment and recorded a theory vote. Mobile viewport showed no document overflow (375px content/client width with scrollbar). Optional panels remained collapsed through polls. These are browser guests, not a new live Twitch verification.
+- Real Twitch evidence from 31 October: broadcaster @shashu1029 authorized the app and sent `!test crown blue circle 2`. Production room J46MSAZ recorded FAIL and the broadcaster's contribution in its journal. This proves one real chat command reached gameplay; an independent-viewer complete round, live broadcast and final video remain unverified.

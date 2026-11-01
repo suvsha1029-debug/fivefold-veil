@@ -29,3 +29,14 @@
 @media(max-width:680px){.expedition-brief{grid-template-columns:1fr;gap:15px;padding:18px}.brief-main h2{font-size:24px}.brief-recap{border-left:0;border-top:1px solid #bcb58b44;padding:14px 0 0}.crew-centre{order:-2}.crew-theories{order:-1}.audience-mode .crew-grid{grid-template-columns:1fr}.audience-mode .crew-theories{grid-column:auto}.hint-actions button{flex:1}.crew-header nav{flex-wrap:wrap;justify-content:flex-end}.crew-header nav button{min-height:44px}.optional-worlds summary span{display:block;margin:0}.room-actions button{min-height:44px!important}}
 
 #room-load-error{border-inline-start:3px solid #f1b891;padding:10px 14px;color:#ffdbba;background:#271e19}
+
+/* Primary participation stays ahead of optional tools. */
+.create-options{margin:16px 0 0;border:1px solid var(--border);padding:12px 14px}
+.create-options summary{cursor:pointer;font-size:12px;color:var(--ink);min-height:28px;line-height:28px}
+.create-options summary span{color:var(--muted);margin-left:8px;font-size:10px}
+.quick-controls{display:flex;align-items:center;flex-wrap:wrap;gap:10px 18px;margin:0 0 12px;padding:13px 16px;border:1px solid var(--border);background:var(--world-panel,#15232c)}
+.quick-controls p{flex:1;min-width:220px;margin:0;color:var(--muted);font-size:12px;line-height:1.7}
+.quick-controls>div{display:flex;gap:8px;flex-wrap:wrap}.quick-controls button{min-height:44px}
+#quick-status{font-size:12px;color:var(--ink)}
+.audience-mode .quick-controls{display:none}
+@media(max-width:680px){.quick-controls>div{width:100%}.quick-controls button{flex:1}.quick-controls p{min-width:0}}

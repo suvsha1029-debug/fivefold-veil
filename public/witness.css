@@ -5,3 +5,14 @@
 .witness-featured{padding:22px;margin-top:18px;border:1px solid #b9d8cd;background:#accfc312}.witness-featured h3,.discovery-recap h3{font:22px/1.4 var(--serif);margin:8px 0;color:#e1e8e9}.witness-replay{border-left:2px solid #c1cdd3;margin-top:18px}.witness-archive{margin-top:18px;border-top:1px solid #adbdca35;padding-top:12px}.witness-archive summary{cursor:pointer;font:14px var(--serif);min-height:30px}.witness-discoveries{display:grid;gap:12px;margin-top:10px}.discovery-recap ol{padding-left:20px;font-size:12px;line-height:1.8;color:#bccbd2}
 .audience-mode .witness-private,.audience-mode .witness-intro,.audience-mode .witness-status,.audience-mode .witness-archive,.audience-mode .witness-panel button{display:none!important}.audience-mode .witness-panel:not(:has(.witness-featured:not([hidden]),.witness-replay:not([hidden]))){display:none}.audience-mode .witness-featured blockquote{font-size:28px}
 @media(max-width:680px){.witness-panel{padding:17px}.witness-heading{align-items:flex-start;flex-direction:column;gap:4px}.witness-queue{grid-template-columns:1fr}.witness-panel blockquote{font-size:19px}.witness-featured{padding:16px}}
+.witness-panel{margin-top:18px;padding:0}
+.witness-panel>.witness-disclosure{display:flex;align-items:center;gap:12px;min-height:54px;padding:15px 22px;cursor:pointer;list-style:none}
+.witness-panel>.witness-disclosure::-webkit-details-marker{display:none}
+.witness-disclosure strong{font:20px var(--serif)}
+.witness-disclosure span{font:11px/1.6 var(--sans);color:#b7c5cc;flex:1}
+.witness-panel>.witness-disclosure::after{content:'+';font:24px var(--serif);color:#d8c8a8}
+.witness-panel[open]>.witness-disclosure::after{content:'−'}
+.witness-panel[open]>.witness-disclosure{border-bottom:1px solid #adbdca35}
+.witness-content{padding:22px}
+.witness-disclosure:focus-visible{outline:2px solid #decc9e;outline-offset:3px}
+@media(max-width:680px){.witness-panel>.witness-disclosure{padding:14px 16px;flex-wrap:wrap;gap:5px 12px}.witness-disclosure span{flex-basis:50%;font-size:10px}.witness-content{padding:16px}}

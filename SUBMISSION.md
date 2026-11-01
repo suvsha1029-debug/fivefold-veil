@@ -31,18 +31,22 @@ Team-room views are at `/teams`. The current Site remains owner-private: room in
 
 ## Required next
 
-- [ ] Complete Twitch email/2FA and app registration; record the app Client ID
-- [ ] Test real broadcaster OAuth and real viewers' `!test`, `!solve`, and `!bind`
+- [x] Complete Twitch email/2FA and app registration; record the app Client ID
+- [x] Real broadcaster OAuth and one broadcaster-chat `!test` verified on 31 October
+- [ ] Complete an independent-viewer live Twitch round covering `!solve` and `!bind`
 - [ ] Test interruption/reconnect and OBS Window Capture on the user's PC
 - [ ] Playtest with a streamer/viewers and refine clarity/pacing from observed feedback
 - [ ] Record creation dates for pre-existing personal artwork; disclose reuse accurately and ask organizers if eligibility is unclear
-- [ ] Provide accessible GitHub/GitLab/Bitbucket source with assets, run instructions, and rights/provenance notes
+- [x] Push source, assets, run instructions, and provenance notes to private GitHub repository
+- [ ] Give the designated judges access to the private repository and working Site
 - [ ] Record/upload an under-three-minute YouTube video showing real Twitch functionality and Codex development
 - [ ] Add project description, demo URL, source URL, screenshots, and Codex use details on Devpost
 - [ ] Obtain the actual main Codex session ID; never substitute the Site ID, repository ID, or this checklist
 - [ ] Review the entry and finish Submit; confirm it says Submitted
 
-Deadline listed by the event: **2 November 2026, 2:00 PM PST / 3 November, 3:30 AM IST**. Recheck the official countdown before submission. Preserve the submitted version and linked materials until winners are announced, per organizer FAQ. An owner-private preview is not a public judge-accessible demo/source link.
+Deadline listed by the event: **2 November 2026, 2:00 PM PST / 3 November, 3:30 AM IST**. Recheck the official countdown before submission. Preserve the submitted version and linked materials until winners are announced, per organizer FAQ. The current Site uses a restricted visitor allowlist and the GitHub repository is private; neither is automatically judge-accessible.
+
+Recording instructions, a 2:50 storyboard, and ready narration are in [DEMO_SCRIPT.md](DEMO_SCRIPT.md). The script is prepared; the video is not yet recorded/uploaded.
 
 ## Demo outline — 2 minutes 50 seconds
 

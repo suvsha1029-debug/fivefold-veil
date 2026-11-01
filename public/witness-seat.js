@@ -5,14 +5,14 @@ const el=(tag,text='',cls='')=>{const n=document.createElement(tag);n.className=
 export class WitnessSeat{
   constructor({getState,isBusy,action,toast}){
     Object.assign(this,{getState,isBusy,action,toast});this.signature='';
-    this.root=el('section','','witness-panel');this.root.setAttribute('aria-label','Witness Seat and discovery replay');
-    this.root.innerHTML=`<div class="witness-heading"><div><p class="eyebrow">EVIDENCE EARNS RECOGNITION</p><h2>The Witness Seat</h2></div><span class="witness-status"></span></div>
+    this.root=el('details','','witness-panel');this.root.id='witness-seat';this.root.setAttribute('aria-label','Witness Seat and discovery replay');
+    this.root.innerHTML=`<summary class="witness-disclosure"><strong>Witness Seat</strong><span class="witness-summary">Optional · recognise a discovery</span></summary><div class="witness-content"><div class="witness-heading"><div><p class="eyebrow">EVIDENCE EARNS RECOGNITION</p><h2>The Witness Seat</h2></div><span class="witness-status"></span></div>
       <p class="witness-intro">A useful experiment or evidence citation can earn one message to the streamer after a correct seal. The host chooses what to feature.</p>
       <div class="witness-private"><div class="witness-host" hidden><button class="outline-button witness-toggle"></button><p>Optional · 10 waiting messages maximum · one per contributor each round · choose across teams.</p><div class="witness-queue"></div></div>
       <form class="witness-compose" hidden><label>Your spotlight message <span>(180 characters)</span><textarea maxlength="180" rows="2" placeholder="Explain your discovery or ask the streamer a question." required></textarea></label><p class="witness-earned"></p><button class="primary-button" type="submit">Send for host review →</button></form><p class="witness-personal" role="status"></p><button class="text-button witness-withdraw" hidden>Withdraw my message</button></div>
       <div class="witness-featured" role="status" aria-live="polite" hidden></div><div class="witness-replay" hidden></div>
-      <details class="witness-archive"><summary>Discovery archive · <span>0</span> seals recorded</summary><div class="witness-discoveries"></div></details>`;
-    document.getElementById('realm-strip').before(this.root);
+      <details class="witness-archive"><summary>Discovery archive · <span>0</span> seals recorded</summary><div class="witness-discoveries"></div></details></div>`;
+    document.querySelector('.crew-activity').after(this.root);
     this.q=s=>this.root.querySelector(s);
     this.q('.witness-toggle').addEventListener('click',()=>this.send({type:'enable',enabled:!this.getState().witness.enabled}));
     this.q('form').addEventListener('submit',async e=>{e.preventDefault();const r=await this.send({type:'submit',text:this.q('textarea').value});if(r)this.q('textarea').value='';});
@@ -29,11 +29,15 @@ export class WitnessSeat{
   }
   render(){
     const state=this.getState();if(!state)return;const w=state.witness;if(!w)return;
-    const key=state.code+':'+state.round;if(this.roomKey!==key){this.roomKey=key;this.q('textarea').value='';this.signature='';}
+    const key=state.code+':'+state.round;if(this.roomKey!==key){this.roomKey=key;this.attentionSeen=new Set();this.q('textarea').value='';this.signature='';}
     this.q('.witness-host').hidden=!state.isHost;
     this.q('.witness-toggle').textContent=w.enabled?'Turn Witness Seat off':'Enable Witness Seat';
     this.q('.witness-status').textContent=w.enabled?'HOST REVIEW / ON':'HOST REVIEW / OFF';
     const seat=w.mine[0],canSubmit=!!seat&&seat.status==='earned'&&w.enabled;
+    this.q('.witness-summary').textContent=w.featured?'Live · contributor spotlight':w.replay?'Live · discovery replay':state.isHost&&w.queue.length?`${w.queue.length} message${w.queue.length===1?'':'s'} awaiting review`:canSubmit?'You earned a message to the streamer':'Optional · recognise a discovery';
+    // Open for a newly earned seat or live moment, then respect the user's choice.
+    const attentionKeys=[...(w.featured?[`${key}:feature:${w.featured.id}:${w.featured.until}`]:[]),...(w.replay?[`${key}:replay:${w.replay.id}:${w.replay.until}`]:[]),...(canSubmit?[`${key}:earned:${seat.id}`]:[])];
+    for(const attentionKey of attentionKeys)if(!this.attentionSeen.has(attentionKey)){this.attentionSeen.add(attentionKey);this.root.open=true;}
     this.q('form').hidden=!canSubmit;this.q('.witness-earned').textContent=seat?.reason||'';
     this.q('.witness-personal').textContent=seat?({earned:w.enabled?'Your contribution earned a seat. Submitting is optional.':'You earned a seat. The host currently has spotlight messages turned off.',pending:'Waiting privately for host approval. Your message is not yet on the broadcast.',featured:'The host featured your message. Thank you for contributing.',expired:'Your request expired. You can earn another seat next round.',dismissed:'The host declined or closed your request.',withdrawn:'You withdrew your message.',removed:'Your message was removed by moderation.'}[seat.status]||''):state.me?'Help eliminate a theory before its eye is sealed to earn a seat.':state.isHost?'Viewers can also submit with !spotlight your message in connected Twitch chat.':'Watch the discoveries here. Join a team to earn a seat.';
     this.q('.witness-withdraw').hidden=!seat||!['pending','featured'].includes(seat.status);
