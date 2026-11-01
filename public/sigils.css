@@ -2,7 +2,7 @@
 body.sigil-ui{
   --bg:#101214;--text:#e7e8e7;--muted:#aeb5bc;--gold:#c8cbd0;
   --border:#bdc6cd35;--paper:#dfe3e5;--ink:#182024;
-  --glass:rgba(17,21,25,.77);--glass-raised:rgba(39,45,50,.68);
+  --glass:rgba(17,21,25,.96);--glass-raised:rgba(39,45,50,.96);
   background:#101214;color:var(--text);
 }
 body.sigil-ui::before{background:linear-gradient(110deg,#101214e8,#101214b8),var(--world-art,url('assets/aurora-forest.png')) center/cover fixed;opacity:1;filter:saturate(.28)}
@@ -124,3 +124,26 @@ body.sigil-ui::before{background:linear-gradient(110deg,#101214e8,#101214b8),var
 .domain-sigil,.portal-seal img{mix-blend-mode:screen}
 .sigil-ui .world-card .world-card-sigil{background:transparent;border:0;padding:0}
 .ambient-sigil,.sigil-ui .chamber-guardian::before,.sigil-ui .realm-strip::after{mix-blend-mode:screen}
+
+/* Interface contrast belongs to the chrome, not the selected landscape. */
+.sigil-ui .create-options summary,.sigil-ui #quick-status{color:#e7e8e7}
+.sigil-ui .quick-controls{background:#111519;color:#e7e8e7}
+.sigil-ui .team-intro-banner a:not(.primary-button){color:#e7e8e7;text-decoration:underline}
+.sigil-ui :is(.outline-button,.text-button,.icon-button){background:#171e23;color:#e2e7ea;border-color:#82909b;line-height:1.5}
+.sigil-ui :is(.outline-button,.text-button,.icon-button):hover:not(:disabled){background:#303c45;color:#fff}
+.sigil-ui :is(.team-row,.emoji-key,.theory-card,.eye-tab,.discovery-chip,.avatar-key,.effects-button,.domain-tab,.world-trigger){background:#1a2024!important}
+.sigil-ui :is(.team-row,.emoji-key,.avatar-key,.discovery-chip)[aria-pressed=true],.sigil-ui .theory-card.selected,.sigil-ui .eye-tab.active{background:#35434c!important}
+.sigil-ui :is(.team-row,.emoji-key,.theory-card,.eye-tab,.discovery-chip,.avatar-key):hover:not(:disabled){background:#303c45!important}
+.sigil-ui .theory-copy strong{color:#e7e8e7}
+.sigil-ui .theory-card.eliminated{opacity:1;background:#161c20!important}
+.sigil-ui .theory-card.eliminated .theory-copy :is(strong,small){color:#aeb7be}
+.sigil-ui button:disabled{opacity:1;filter:none;color:#aeb7be}
+.sigil-ui :is(.primary-button,.lock-button,.test-button):disabled{background:#414b53!important;color:#d0d6db!important;border-color:#687780!important}
+.sigil-ui input::placeholder,.sigil-ui textarea::placeholder{color:#aeb7be;opacity:1}
+.sigil-ui dialog{background:#141a1e}
+.sigil-ui .world-card-copy{background:#141c21}
+.sigil-ui .chamber-landmark,.sigil-ui .chamber-portal{background:#152026}
+.sigil-ui .realm-strip::after{pointer-events:none;z-index:0}
+.sigil-ui .realm-strip>*{position:relative;z-index:1}
+#domain-lounge :is(.outline-button,.text-button,.icon-button,.lounge-domain){background:#15212a;color:#e2e7ea;border-color:#82909b}
+@media(forced-colors:active){.sigil-ui :is(button,a,input,select,textarea,summary){forced-color-adjust:auto}}
