@@ -12,7 +12,7 @@ const ENV = { TWITCH_CLIENT_ID: 'testclient123456', TWITCH_CLIENT_SECRET: 'serve
 const ok = (body, status = 200) => Response.json(body, { status });
 
 function fixture() {
-  const store = new MemoryRoomStore(), calls = [];
+  const store = new MemoryRoomStore(), calls = [], diagnostics = [];
   let clock = 1800000000000, expired = false, refreshFails = false, wrongClient = false, wrongScope = false, wrongUser = false, transient = false;
   const identity = () => ({ client_id: wrongClient ? 'another-client' : ENV.TWITCH_CLIENT_ID, user_id: wrongUser ? '999' : '123', login: 'broadcaster', scopes: wrongScope ? [] : ['user:read:chat'] });
   const fetchImpl = async (url, init) => {
@@ -32,7 +32,7 @@ function fixture() {
     if (url.endsWith('/revoke')) return new Response(null, { status: 200 });
     throw new Error('Unexpected mock endpoint');
   };
-  const options = { env: ENV, fetchImpl, now: () => clock };
+  const options = { env: ENV, fetchImpl, now: () => clock, diagnostic: entry => diagnostics.push(entry) };
   const api = new TwitchSessionApi(store, options);
   const jar = new Map();
   function request(path, { method = 'GET', body, origin = ORIGIN, cookie = [...jar].map(([k, v]) => `${k}=${v}`).join('; '), headers = {} } = {}) {
@@ -55,7 +55,7 @@ function fixture() {
     const response = await call('exchange', { method: 'POST', body: { state, code: 'temporary-code' } });
     return { response, state, authorization, pendingCookie };
   }
-  return { api, store, jar, calls, options, call, request, login, setExpired: value => expired = value, setRefreshFailure: value => refreshFails = value, setWrongClient: value => wrongClient = value, setWrongScope: value => wrongScope = value, setWrongUser: value => wrongUser = value, setTransient: value => transient = value, advance: ms => clock += ms };
+  return { api, store, jar, calls, diagnostics, options, call, request, login, setExpired: value => expired = value, setRefreshFailure: value => refreshFails = value, setWrongClient: value => wrongClient = value, setWrongScope: value => wrongScope = value, setWrongUser: value => wrongUser = value, setTransient: value => transient = value, advance: ms => clock += ms };
 }
 
 test('authorization code exchange stores encrypted tokens and restores with only an opaque HttpOnly cookie', async () => {
@@ -322,4 +322,54 @@ test('a successful upstream response cannot report connected after concurrent Di
   const response = await checking;
   assert.equal(response.status, 401);
   assert.notEqual((await response.json()).connected, true);
+});
+
+test('operational diagnostics distinguish failures using only fixed endpoints, enums and HTTP statuses', async () => {
+  for (const mode of ['network', 'timeout', 'http', 'token-json', 'validate-json', 'identity']) {
+    const f = fixture(), original = f.options.fetchImpl;
+    if (mode === 'identity') f.setWrongScope(true);
+    const api = new TwitchSessionApi(f.store, { ...f.options, fetchImpl: async (url, init) => {
+      if (url.endsWith('/oauth2/token')) {
+        if (mode === 'network' || mode === 'timeout') {
+          const error = new Error(ACCESS + ENV.TWITCH_CLIENT_SECRET);
+          error.name = mode === 'timeout' ? 'TimeoutError' : REFRESH;
+          throw error;
+        }
+        if (mode === 'http') return new Response(ACCESS + ENV.TWITCH_CLIENT_SECRET, { status: 503, headers: { 'Content-Type': 'text/html; private=' + REFRESH } });
+        if (mode === 'token-json') return new Response(ACCESS + ENV.TWITCH_CLIENT_SECRET, { status: 200, headers: { 'Content-Type': 'application/json; private=' + REFRESH } });
+      }
+      if (mode === 'validate-json' && url.endsWith('/validate')) return new Response(ACCESS, { status: 200, headers: { 'Content-Type': 'text/html; private=' + REFRESH } });
+      return original(url, init);
+    } });
+    const start = await f.call('start', { method: 'POST' });
+    const state = new URL((await start.json()).authorizationUrl).searchParams.get('state');
+    const response = await api.fetch(f.request('exchange', { method: 'POST', body: { state, code: 'temporary-code' } }));
+    assert.equal(response.status, mode === 'identity' ? 401 : 503);
+    assert.equal(f.diagnostics.length > 0, true);
+    for (const entry of f.diagnostics) {
+      assert.deepEqual(Object.keys(entry).filter(key => !['stage', 'hostname', 'path', 'httpStatus', 'exception', 'contentType', 'failure'].includes(key)), []);
+      assert.equal(entry.hostname, 'id.twitch.tv');
+      assert.equal(['/oauth2/token', '/oauth2/validate'].includes(entry.path), true);
+      if (entry.contentType) assert.equal(['json', 'html', 'text', 'other', 'missing'].includes(entry.contentType), true);
+    }
+    const serialized = JSON.stringify(f.diagnostics) + await response.text();
+    for (const secret of [ACCESS, REFRESH, NEXT_ACCESS, NEXT_REFRESH, ENV.TWITCH_CLIENT_SECRET, ENV.TWITCH_CLIENT_ID, ENV.TWITCH_TOKEN_KEY, state, 'temporary-code', f.jar.get('fv_twitch_pending')]) assert.equal(serialized.includes(secret), false);
+    const last = f.diagnostics.at(-1);
+    assert.equal(last.stage, ['validate-json', 'identity'].includes(mode) ? 'exchange-validate' : 'exchange-token');
+    if (mode === 'network') assert.equal(last.exception, 'OtherError');
+    if (mode === 'timeout') assert.equal(last.exception, 'TimeoutError');
+    if (mode === 'http') { assert.equal(last.httpStatus, 503); assert.equal(last.contentType, 'html'); }
+    if (mode.endsWith('-json')) { assert.equal(last.httpStatus, 200); assert.equal(last.failure, 'json_invalid'); assert.equal(last.exception, 'SyntaxError'); }
+    if (mode === 'identity') assert.equal(last.failure, 'identity_rejected');
+  }
+});
+
+test('diagnostic logger failures cannot prevent successful authorization', async () => {
+  const f = fixture();
+  const api = new TwitchSessionApi(f.store, { ...f.options, diagnostic: () => { throw new Error('logger unavailable'); } });
+  const start = await f.call('start', { method: 'POST' });
+  const state = new URL((await start.json()).authorizationUrl).searchParams.get('state');
+  const response = await api.fetch(f.request('exchange', { method: 'POST', body: { state, code: 'temporary-code' } }));
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).connected, true);
 });

@@ -5,6 +5,17 @@ const SESSION_COOKIE = 'fv_twitch_session';
 const PENDING_TTL = 10 * 60 * 1000;
 const SESSION_TTL = 7 * 24 * 60 * 60 * 1000;
 const TYPES = new Set(['channel.chat.message', 'channel.chat.message_delete', 'channel.chat.clear_user_messages', 'channel.chat.clear']);
+const DIAGNOSTIC_STAGES = Object.freeze({
+  'exchange-token': ['id.twitch.tv', '/oauth2/token'],
+  'exchange-validate': ['id.twitch.tv', '/oauth2/validate'],
+  'restore-validate': ['id.twitch.tv', '/oauth2/validate'],
+  'refresh-token': ['id.twitch.tv', '/oauth2/token'],
+  'refresh-validate': ['id.twitch.tv', '/oauth2/validate'],
+  channel: ['api.twitch.tv', '/helix/channels'],
+  subscribe: ['api.twitch.tv', '/helix/eventsub/subscriptions'],
+  revoke: ['id.twitch.tv', '/oauth2/revoke'],
+});
+const DIAGNOSTIC_EXCEPTIONS = new Set(['AbortError', 'TimeoutError', 'TypeError', 'SyntaxError', 'Error', 'IdentityRejected', 'TokenRejected']);
 const random = () => [...crypto.getRandomValues(new Uint8Array(32))].map(x => x.toString(16).padStart(2, '0')).join('');
 const digest = async value => [...new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(value)))].map(x => x.toString(16).padStart(2, '0')).join('');
 const sameDigest = (a, b) => { let difference = a.length ^ b.length; for (let i = 0; i < 64; i++) difference |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0); return difference === 0; };
@@ -19,8 +30,8 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 // OAuth secrets live only in the server environment and encrypted vault rows.
 // The generic store is shared with rooms, but reserved keys cannot be room codes.
 export class TwitchSessionApi {
-  constructor(store, { env = {}, fetchImpl = globalThis.fetch.bind(globalThis), now = Date.now, origin } = {}) {
-    Object.assign(this, { store, env, fetchImpl, now });
+  constructor(store, { env = {}, fetchImpl = globalThis.fetch.bind(globalThis), now = Date.now, origin, diagnostic = entry => console.info('Twitch OAuth diagnostic', entry) } = {}) {
+    Object.assign(this, { store, env, fetchImpl, now, diagnostic });
     this.clientId = env.TWITCH_CLIENT_ID || 'rkyl33gvhlyqeqwrqcj6ubzj1ruiat';
     try {
       const parsed = new URL(origin || env.TWITCH_APP_ORIGIN || '');
@@ -97,7 +108,7 @@ export class TwitchSessionApi {
         throw error;
       }
       if (action === 'status' || action === 'validate') {
-        const result = await this.authorized(session, tokens => this.upstream('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: `OAuth ${tokens.access}` } }));
+        const result = await this.authorized(session, tokens => this.upstream('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: `OAuth ${tokens.access}` } }, 'restore-validate'));
         let identity;
         try { identity = await this.identity(result, session.row.data.identity.user_id); }
         catch (error) {
@@ -108,7 +119,7 @@ export class TwitchSessionApi {
         return this.response(action === 'status' ? { configured: true, connected: true, clientId: this.clientId, channel: identity.login, expiresAt: session.row.data.expiresAt } : identity);
       }
       if (action === 'channel') {
-        const result = await this.authorized(session, tokens => this.upstream(`https://api.twitch.tv/helix/channels?broadcaster_id=${encodeURIComponent(session.row.data.identity.user_id)}`, { headers: { Authorization: `Bearer ${tokens.access}`, 'Client-Id': this.clientId } }));
+        const result = await this.authorized(session, tokens => this.upstream(`https://api.twitch.tv/helix/channels?broadcaster_id=${encodeURIComponent(session.row.data.identity.user_id)}`, { headers: { Authorization: `Bearer ${tokens.access}`, 'Client-Id': this.clientId } }, 'channel'));
         if (!result.ok) throw unavailable();
         const data = await result.json();
         const channel = data?.data?.find(x => x.broadcaster_id === session.row.data.identity.user_id);
@@ -118,7 +129,7 @@ export class TwitchSessionApi {
       const result = await this.authorized(session, tokens => this.upstream('https://api.twitch.tv/helix/eventsub/subscriptions', {
         method: 'POST', headers: { Authorization: `Bearer ${tokens.access}`, 'Client-Id': this.clientId, 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: body.type, version: '1', condition: { broadcaster_user_id: session.row.data.identity.user_id, user_id: session.row.data.identity.user_id }, transport: { method: 'websocket', session_id: body.sessionId } }),
-      }));
+      }, 'subscribe'));
       if (!result.ok) throw fault(result.status === 403 ? 403 : 503, 'subscription_failed', 'Twitch could not start the chat subscription. Reconnect with the broadcaster account.');
       return this.response({ subscribed: true }, 202);
     } catch (error) {
@@ -128,9 +139,25 @@ export class TwitchSessionApi {
     }
   }
 
-  async upstream(url, init = {}) {
-    try { return await this.fetchImpl(url, { ...init, redirect: 'error', signal: AbortSignal.timeout(6000) }); }
-    catch { throw unavailable(); }
+  report(stage, httpStatus, error, contentType, failure) {
+    // Build records solely from constants, numeric status and an error-name enum.
+    // Never log URLs, query strings, bodies, headers, identifiers or raw errors.
+    const endpoint = Object.hasOwn(DIAGNOSTIC_STAGES, stage) && DIAGNOSTIC_STAGES[stage];
+    if (!endpoint) return;
+    const entry = { stage, hostname: endpoint[0], path: endpoint[1] };
+    if (Number.isInteger(httpStatus) && httpStatus >= 0 && httpStatus <= 599) entry.httpStatus = httpStatus;
+    if (error) entry.exception = DIAGNOSTIC_EXCEPTIONS.has(error.name) ? error.name : 'OtherError';
+    if (contentType !== undefined) entry.contentType = !contentType ? 'missing' : /^application\/json(?:\s*;|$)/i.test(contentType) ? 'json' : /^text\/html(?:\s*;|$)/i.test(contentType) ? 'html' : /^text\/plain(?:\s*;|$)/i.test(contentType) ? 'text' : 'other';
+    if (['json_invalid', 'token_rejected', 'identity_rejected'].includes(failure)) entry.failure = failure;
+    try { this.diagnostic(entry); } catch {}
+  }
+
+  async upstream(url, init = {}, stage) {
+    try {
+      const response = await this.fetchImpl(url, { ...init, redirect: 'error', signal: AbortSignal.timeout(6000) });
+      this.report(stage, response.status, undefined, response.headers.get('content-type'));
+      return response;
+    } catch (error) { this.report(stage, undefined, error); throw unavailable(); }
   }
 
   async cryptoKey() {
@@ -160,20 +187,21 @@ export class TwitchSessionApi {
   }
 
   async token(parameters) {
-    const response = await this.upstream('https://id.twitch.tv/oauth2/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: this.clientId, client_secret: this.env.TWITCH_CLIENT_SECRET, ...parameters }).toString() });
+    const stage = parameters.grant_type === 'refresh_token' ? 'refresh-token' : 'exchange-token';
+    const response = await this.upstream('https://id.twitch.tv/oauth2/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: this.clientId, client_secret: this.env.TWITCH_CLIENT_SECRET, ...parameters }).toString() }, stage);
     if (!response.ok) {
       if ([400, 401, 403].includes(response.status)) throw denied();
       throw unavailable();
     }
-    let data; try { data = await response.json(); } catch { throw unavailable(); }
-    if (typeof data.access_token !== 'string' || !data.access_token || data.access_token.length > 4096 || typeof data.refresh_token !== 'string' || !data.refresh_token || data.refresh_token.length > 4096) throw denied();
+    let data; try { data = await response.json(); } catch (error) { this.report(stage, response.status, error, response.headers.get('content-type'), 'json_invalid'); throw unavailable(); }
+    if (typeof data.access_token !== 'string' || !data.access_token || data.access_token.length > 4096 || typeof data.refresh_token !== 'string' || !data.refresh_token || data.refresh_token.length > 4096) { this.report(stage, response.status, { name: 'TokenRejected' }, response.headers.get('content-type'), 'token_rejected'); throw denied(); }
     return { access: data.access_token, refresh: data.refresh_token };
   }
 
-  async identity(response, expectedUser) {
+  async identity(response, expectedUser, stage = 'restore-validate') {
     if (!response.ok) throw response.status === 401 || response.status === 403 ? denied() : unavailable();
-    let data; try { data = await response.json(); } catch { throw unavailable(); }
-    if (data.client_id !== this.clientId || typeof data.user_id !== 'string' || !/^\d{1,30}$/.test(data.user_id) || typeof data.login !== 'string' || !/^[a-zA-Z0-9_]{1,30}$/.test(data.login) || !Array.isArray(data.scopes) || !data.scopes.includes('user:read:chat') || (expectedUser && data.user_id !== expectedUser)) throw denied();
+    let data; try { data = await response.json(); } catch (error) { this.report(stage, response.status, error, response.headers.get('content-type'), 'json_invalid'); throw unavailable(); }
+    if (data.client_id !== this.clientId || typeof data.user_id !== 'string' || !/^\d{1,30}$/.test(data.user_id) || typeof data.login !== 'string' || !/^[a-zA-Z0-9_]{1,30}$/.test(data.login) || !Array.isArray(data.scopes) || !data.scopes.includes('user:read:chat') || (expectedUser && data.user_id !== expectedUser)) { this.report(stage, response.status, { name: 'IdentityRejected' }, response.headers.get('content-type'), 'identity_rejected'); throw denied(); }
     return { client_id: this.clientId, user_id: data.user_id, login: data.login, scopes: ['user:read:chat'] };
   }
 
@@ -188,7 +216,7 @@ export class TwitchSessionApi {
       // A reserved row lets Disconnect cancel a sign-in before Twitch responds.
       if (!await this.store.insert(storageKey, { kind: 'twitch-session', sealed: null, revoked: false, exchangeOwner, expiresAt })) throw denied();
       const tokens = await this.token({ code: body.code, grant_type: 'authorization_code', redirect_uri: this.origin + '/teams' });
-      const identity = await this.identity(await this.upstream('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: `OAuth ${tokens.access}` } }));
+      const identity = await this.identity(await this.upstream('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: `OAuth ${tokens.access}` } }, 'exchange-validate'), undefined, 'exchange-validate');
       const latest = await this.store.get(storageKey), pendingAfter = await this.store.get(pendingKey);
       if (!latest || latest.data.revoked || latest.data.exchangeOwner !== exchangeOwner || pendingAfter?.data.cancelled || pendingAfter?.data.exchangeOwner !== exchangeOwner) throw denied();
       const completed = { kind: 'twitch-session', identity, sealed: await this.seal(tokens, storageKey), tokenVersion: 0, refreshLease: null, revoked: false, expiresAt };
@@ -243,7 +271,7 @@ export class TwitchSessionApi {
       try {
         const previous = await this.unseal(row.data, session.storageKey);
         const tokens = await this.token({ grant_type: 'refresh_token', refresh_token: previous.refresh });
-        const identity = await this.identity(await this.upstream('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: `OAuth ${tokens.access}` } }), row.data.identity.user_id);
+        const identity = await this.identity(await this.upstream('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: `OAuth ${tokens.access}` } }, 'refresh-validate'), row.data.identity.user_id, 'refresh-validate');
         const latest = await this.store.get(session.storageKey);
         if (!this.active(latest)) throw denied();
         if (latest.data.tokenVersion !== row.data.tokenVersion) return latest;
@@ -301,7 +329,7 @@ export class TwitchSessionApi {
       if (this.active(row)) { try { tokens = await this.unseal(row.data, storageKey); } catch {} }
       await this.invalidate(storageKey);
       if (tokens) {
-        try { await this.upstream('https://id.twitch.tv/oauth2/revoke', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: this.clientId, token: tokens.access }).toString() }); } catch {}
+        try { await this.upstream('https://id.twitch.tv/oauth2/revoke', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ client_id: this.clientId, token: tokens.access }).toString() }, 'revoke'); } catch {}
       }
     }
     return this.response({ disconnected: true }, 200, [this.cookie(SESSION_COOKIE, '', 0), this.cookie(PENDING_COOKIE, '', 0)]);

@@ -274,18 +274,19 @@ const twitch=new TwitchChat({sessionClient:twitchSession,onMessage:message=>{
   if(state)render();
 }});
 function renderTwitchConnection(){
-  const working=['restoring','connecting','reconnecting'].includes(connection.state);
+  const restoring=['restoring','connecting','reconnecting'].includes(connection.state);
+  const working=restoring||twitchAuthBusy;
   const connected=connection.state==='connected';
-  const message=connection.message||(connected?`Connected to @${connection.channel}`:'Twitch is optional. Connect your channel to receive chat commands.');
+  const message=twitchAuthBusy?'Opening Twitch sign-in…':connection.message||(connected?`Connected to @${connection.channel}`:'Twitch is optional. Connect your channel to receive chat commands.');
   $('room-twitch-status').textContent=message;
   $('room-twitch-status').setAttribute('aria-busy',String(working));
   $('room-twitch-live').hidden=!state?.canRelay;
   $('room-twitch-live').textContent=connected?`Twitch chat connected · @${connection.channel} · saved sign-in`:`Twitch chat · ${message}`;
   $('room-twitch-live').dataset.state=connection.state;
   $('room-twitch-button').textContent=connected?`Twitch: @${connection.channel}`:working?'Twitch: connecting…':connection.state==='error'?'Reconnect Twitch':'Connect Twitch';
-  $('room-twitch-form').hidden=connected||working||twitchConfigured===false;
+  $('room-twitch-form').hidden=connected||restoring||twitchConfigured===false;
   $('room-twitch-form').querySelector('button').disabled=twitchAuthBusy;
-  $('room-twitch-retry').hidden=connected||working||twitchConfigured===false;
+  $('room-twitch-retry').hidden=connection.state!=='error'||working||twitchConfigured===false;
   $('room-twitch-disconnect').hidden=!connected&&connection.state!=='error';
 }
 async function restoreTwitch(){
@@ -303,7 +304,7 @@ async function restoreTwitch(){
 }
 $('room-twitch-button').addEventListener('click',()=>$('room-twitch-dialog').showModal());
 $('room-twitch-retry').addEventListener('click',restoreTwitch);
-$('room-twitch-form').addEventListener('submit',async event=>{event.preventDefault();if(twitchAuthBusy||!session||!state?.canRelay)return;const seat=session;twitchAuthBusy=true;renderTwitchConnection();try{remember(seat);sessionStorage.setItem('fivefold-twitch-return',JSON.stringify({code:seat.code,role:seat.role}));const url=await twitchSession.start();if(session===seat)location.assign(url);}catch(error){toast(error.message,true);}finally{twitchAuthBusy=false;renderTwitchConnection();}});
+$('room-twitch-form').addEventListener('submit',async event=>{event.preventDefault();if(twitchAuthBusy||!session||!state?.canRelay)return;const seat=session,serial=++restoreSerial;twitchAuthBusy=true;renderTwitchConnection();try{remember(seat);sessionStorage.setItem('fivefold-twitch-return',JSON.stringify({code:seat.code,role:seat.role}));const url=await twitchSession.start();if(session===seat&&serial===restoreSerial)location.assign(url);}catch(error){if(session===seat&&serial===restoreSerial)toast(error.message,true);}finally{twitchAuthBusy=false;renderTwitchConnection();}});
 $('room-twitch-disconnect').addEventListener('click',async()=>{++restoreSerial;twitch.disconnect(false);const button=$('room-twitch-disconnect');button.disabled=true;try{await twitchSession.request('disconnect',{});connection={state:'disconnected',message:'Disconnected and saved sign-in removed. Browser teams can continue.'};}catch{connection={state:'error',message:'Chat stopped, but saved sign-in could not be removed. Retry Disconnect when online.'};}finally{button.disabled=false;renderTwitchConnection();if(state)render();}});
 
 setInterval(()=>{if(!document.hidden)refresh();},3000);setInterval(()=>{if(!document.hidden)renderClock();},250);
