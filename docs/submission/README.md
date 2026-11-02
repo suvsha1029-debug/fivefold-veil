@@ -10,3 +10,10 @@ The video combines actual app screenshots, a saved live Twitch command receipt f
 The video has not been uploaded to YouTube by this repository update. Upload the file and put the resulting video URL into the entry. Actual Codex development footage and a complete live multi-viewer round remain distinct evidence gaps; this package does not claim that all contest requirements are satisfied.
 
 Original artwork and creative direction are credited to the project creator; Codex assisted implementation, debugging, testing, and preparation of this walkthrough. See [asset provenance](../../IP_NOTES.md).
+
+## Public links
+
+- [Live team rooms](https://signal-lab-twitchcon-4c9e.shashwatdogra1.chatgpt.site/teams) — Site audience set to public and confirmed through Sites on 2 November.
+- [Public source repository](https://github.com/suvsha1029-debug/fivefold-veil)
+
+Public visitor access does not grant editing rights or private room-host credentials. A fresh-browser Site check remains outstanding because the automated HTTP check was blocked by Cloudflare error 1010.

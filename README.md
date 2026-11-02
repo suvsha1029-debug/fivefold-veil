@@ -190,7 +190,7 @@ References: [Twitch app registration](https://dev.twitch.tv/docs/authentication/
 
 ## Hosting and access
 
-The same Sites project is retained in `.openai/hosting.json`; it now declares D1 binding `DB` instead of static hosting. The GitHub repository is public. Site visitor access is separate: the request to make the Site public is pending because the current Sites connection returns project not found. An unauthenticated HTTP check on 2 November returned 403. A join code does not bypass Site access; do not describe the Site as publicly accessible until the owner connection updates its audience and access is verified.
+The same Sites project is retained in `.openai/hosting.json`; it now declares D1 binding `DB` instead of static hosting. Both the GitHub repository and Site visitor audience are public. On 2 November the owner set the Site access policy to public (revision 3), and a separate Sites read confirmed that setting. Public visitor access does not grant editing access or private room-host credentials. An automated unauthenticated HTTP check was blocked by Cloudflare with error 1010; fresh-browser visitor access is still a separate verification step.
 
 Capture the host browser window in OBS for the arena/controls, or a joined viewer browser for the keyboard and shared investigation. Separate room browsers synchronize through the server. The legacy solo rehearsal's **Stream view** remains a same-window capture layout, independent of room state.
 
@@ -221,7 +221,7 @@ Tests cover deterministic rule generation, parsing including emoji, timing, voti
 - `db/schema.ts`, `drizzle/`: database schema and immutable generated migrations
 - `tests/`: Node test suite; `SUBMISSION.md`: remaining contest work
 
-Remaining product work includes real Twitch playtesting, broader load/accessibility tests, optional verified browser/Twitch linking, account-level recovery and a publicly accessible distribution plan. The current research report describes version 0.2.0; its participation limits do not describe the new citation-enabled room mode.
+Remaining product work includes real Twitch playtesting, broader load/accessibility tests, optional verified browser/Twitch linking, account-level recovery and a fresh-browser check of the public distribution links. The current research report describes version 0.2.0; its participation limits do not describe the new citation-enabled room mode.
 
 ## Council of Streamers
 

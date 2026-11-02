@@ -18,7 +18,7 @@ The particular combination of contributor-earned votes, simultaneous eye investi
 - [x] Viewers-lead, shared and host-led modes with server-enforced decision permissions and host approval of browser/Twitch experiments
 - [x] Host-authored rule options and labels, private answer editor, and validation of a unique final signal with five necessary clues
 
-Team-room views are at `/teams`. Public Site access is pending; room invitations do not grant Site access. Browser seats are guest identities, separate from Twitch host-relay identities; they do not prove one human per vote. Do not claim a live Twitch multi-viewer session or OBS broadcast until tested. The room member cap of 200 is not a load-test result.
+Team-room views are at `/teams`. The Site visitor audience and GitHub repository are public; public visiting does not grant room-host credentials or Site editing access. Browser seats are guest identities, separate from Twitch host-relay identities; they do not prove one human per vote. Do not claim a live Twitch multi-viewer session or OBS broadcast until tested. The room member cap of 200 is not a load-test result.
 
 - [x] Five seeded rule investigations, one unique common signal; every eye is necessary
 - [x] Shared evidence, automatic theory elimination, per-eye filters
@@ -46,13 +46,14 @@ Room login uses runtime `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, `TWITCH_TOKE
 - [ ] Record creation dates for pre-existing personal artwork; disclose reuse accurately and ask organizers if eligibility is unclear
 - [x] Push source, assets, run instructions, and provenance notes to GitHub repository
 - [x] Make the GitHub repository public for judges
-- [ ] Make the working Site public and verify judge access (current Sites connection returns project not found)
+- [x] Set the working Site visitor audience to public and confirm the policy through Sites
+- [ ] Verify the public Site in a fresh browser (automated HTTP check was blocked by Cloudflare error 1010)
 - [ ] Record/upload an under-three-minute YouTube video showing real Twitch functionality and Codex development
 - [ ] Add project description, demo URL, source URL, screenshots, and Codex use details on Devpost
 - [ ] Obtain the actual main Codex session ID; never substitute the Site ID, repository ID, or this checklist
 - [ ] Review the entry and finish Submit; confirm it says Submitted
 
-Deadline listed by the event: **2 November 2026, 2:00 PM PST / 3 November, 3:30 AM IST**. Recheck the official countdown before submission. Preserve the submitted version and linked materials until winners are announced, per organizer FAQ. The GitHub repository is now public. Public Site access is still unverified: the current Sites connection returns project not found, and an unauthenticated HTTP check returned 403 on 2 November.
+Deadline listed by the event: **2 November 2026, 2:00 PM PST / 3 November, 3:30 AM IST**. Recheck the official countdown before submission. Preserve the submitted version and linked materials until winners are announced, per organizer FAQ. Both the GitHub repository and Site visitor audience are now public. Sites confirmed public policy revision 3 on 2 November. An automated unauthenticated HTTP check was blocked by Cloudflare error 1010, so a fresh-browser visitor check remains outstanding.
 
 Recording instructions, a 2:50 storyboard, and ready narration are in [DEMO_SCRIPT.md](DEMO_SCRIPT.md). [Codex development capture](docs/CODEX_DEVELOPMENT_CAPTURE.md) plans a truthful 20–30-second segment of the actual chat, auth implementation, tests and app reload. These are instructions, not created footage or confirmation that a video satisfies the event's rules. The revised [2:53 screenshot walkthrough, captions, and transcript](docs/submission/README.md) now includes the research and iteration journey and is included in the repository. It is not a live-action recording and does not yet include actual Codex development footage; it has not been uploaded to YouTube.
 
