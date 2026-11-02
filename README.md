@@ -6,7 +6,7 @@
 
 [Live team rooms](https://signal-lab-twitchcon-4c9e.shashwatdogra1.chatgpt.site/teams) · [YouTube: development journey](https://www.youtube.com/watch?v=KSUtdG_mDbc) · [YouTube: explained](https://www.youtube.com/watch?v=p1Gp0-6BwVY) · [Video files, captions, and transcript](docs/submission/README.md) · [Development iterations](docs/submission/ITERATIONS.md)
 
-The narrated video is about 2:53 and includes the progression from Signal Lab to Fivefold Veil. It uses screenshots and real source/test excerpts, not captured Codex UI footage. Site visitor access is managed separately from this repository.
+[Download the final narrated demo](docs/submission/Fivefold-Veil-Final.mp4) and its [English captions](docs/submission/Fivefold-Veil-Final.srt). The 2:53 final cut shows the original Codex conversation, a viewer joining Crown in Twitch chat, and a separate Twitch experiment recorded as PASS in the game journal. The YouTube links above point to earlier walkthroughs.
 
 ## Clone and run
 
