@@ -4,7 +4,7 @@
 
 ## Demo and development story
 
-[Live team rooms](https://signal-lab-twitchcon-4c9e.shashwatdogra1.chatgpt.site/teams) · [Video, captions, and transcript](docs/submission/README.md) · [Development iterations](docs/submission/ITERATIONS.md)
+[Live team rooms](https://signal-lab-twitchcon-4c9e.shashwatdogra1.chatgpt.site/teams) · [YouTube: development journey](https://www.youtube.com/watch?v=KSUtdG_mDbc) · [YouTube: explained](https://www.youtube.com/watch?v=p1Gp0-6BwVY) · [Video files, captions, and transcript](docs/submission/README.md) · [Development iterations](docs/submission/ITERATIONS.md)
 
 The narrated video is about 2:53 and includes the progression from Signal Lab to Fivefold Veil. It uses screenshots and real source/test excerpts, not captured Codex UI footage. Site visitor access is managed separately from this repository.
 
@@ -190,7 +190,7 @@ References: [Twitch app registration](https://dev.twitch.tv/docs/authentication/
 
 ## Hosting and access
 
-The same Sites project is retained in `.openai/hosting.json`; it now declares D1 binding `DB` instead of static hosting. Both the GitHub repository and Site visitor audience are public. On 2 November the owner set the Site access policy to public (revision 3), and a separate Sites read confirmed that setting. Public visitor access does not grant editing access or private room-host credentials. An automated unauthenticated HTTP check was blocked by Cloudflare with error 1010; fresh-browser visitor access is still a separate verification step.
+The same Sites project is retained in `.openai/hosting.json`; it now declares D1 binding `DB` instead of static hosting. Both the GitHub repository and Site visitor audience are public. On 2 November the owner set the Site access policy to public (revision 3), and a separate Sites read confirmed that setting. Public visitor access does not grant editing access or private room-host credentials. On 2 November the home page, team-room lobby, and home-to-team-room navigation loaded in the controlled browser. Automated unauthenticated HTTP checks were blocked by Cloudflare error 1010; this browser session was not an isolated signed-out session, so it does not independently prove anonymous browser access.
 
 Capture the host browser window in OBS for the arena/controls, or a joined viewer browser for the keyboard and shared investigation. Separate room browsers synchronize through the server. The legacy solo rehearsal's **Stream view** remains a same-window capture layout, independent of room state.
 

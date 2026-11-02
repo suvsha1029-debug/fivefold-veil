@@ -47,15 +47,17 @@ Room login uses runtime `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, `TWITCH_TOKE
 - [x] Push source, assets, run instructions, and provenance notes to GitHub repository
 - [x] Make the GitHub repository public for judges
 - [x] Set the working Site visitor audience to public and confirm the policy through Sites
-- [ ] Verify the public Site in a fresh browser (automated HTTP check was blocked by Cloudflare error 1010)
-- [ ] Record/upload an under-three-minute YouTube video showing real Twitch functionality and Codex development
+- [x] Verify website home, team lobby and their navigation load in the controlled browser
+- [ ] Independently verify the website in an isolated signed-out browser; automated HTTP checks are blocked by Cloudflare 1010
+- [x] Upload both narrated walkthroughs publicly to YouTube and verify their watch links/playback
+- [ ] Include actual Twitch functionality and Codex development footage in the under-three-minute submission video; current edits use screenshots/source excerpts
 - [ ] Add project description, demo URL, source URL, screenshots, and Codex use details on Devpost
 - [ ] Obtain the actual main Codex session ID; never substitute the Site ID, repository ID, or this checklist
 - [ ] Review the entry and finish Submit; confirm it says Submitted
 
-Deadline listed by the event: **2 November 2026, 2:00 PM PST / 3 November, 3:30 AM IST**. Recheck the official countdown before submission. Preserve the submitted version and linked materials until winners are announced, per organizer FAQ. Both the GitHub repository and Site visitor audience are now public. Sites confirmed public policy revision 3 on 2 November. An automated unauthenticated HTTP check was blocked by Cloudflare error 1010, so a fresh-browser visitor check remains outstanding.
+Deadline listed by the event: **2 November 2026, 2:00 PM PST / 3 November, 3:30 AM IST**. Recheck the official countdown before submission. Preserve the submitted version and linked materials until winners are announced, per organizer FAQ. Both the GitHub repository and Site visitor audience are now public. Sites confirmed public policy revision 3 on 2 November. The home page, team-room lobby, and their navigation loaded in the controlled browser on 2 November. Automated HTTP checks are blocked by Cloudflare error 1010, and an isolated signed-out browser check remains outstanding.
 
-Recording instructions, a 2:50 storyboard, and ready narration are in [DEMO_SCRIPT.md](DEMO_SCRIPT.md). [Codex development capture](docs/CODEX_DEVELOPMENT_CAPTURE.md) plans a truthful 20–30-second segment of the actual chat, auth implementation, tests and app reload. These are instructions, not created footage or confirmation that a video satisfies the event's rules. The revised [2:53 screenshot walkthrough, captions, and transcript](docs/submission/README.md) now includes the research and iteration journey and is included in the repository. It is not a live-action recording and does not yet include actual Codex development footage; it has not been uploaded to YouTube.
+Recording instructions, a 2:50 storyboard, and ready narration are in [DEMO_SCRIPT.md](DEMO_SCRIPT.md). [Codex development capture](docs/CODEX_DEVELOPMENT_CAPTURE.md) plans a truthful 20–30-second segment of the actual chat, auth implementation, tests and app reload. These are instructions, not created footage or confirmation that a video satisfies the event's rules. The revised [2:53 screenshot walkthrough, captions, and transcript](docs/submission/README.md) now includes the research and iteration journey and is included in the repository. It is not a live-action recording and does not yet include actual Codex development footage; the creator has now uploaded [Journey](https://www.youtube.com/watch?v=KSUtdG_mDbc) and [Explained](https://www.youtube.com/watch?v=p1Gp0-6BwVY) publicly. Both watch links returned unauthenticated oEmbed metadata and played in the controlled browser on 2 November.
 
 ## Demo outline — 2 minutes 50 seconds
 
