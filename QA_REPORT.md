@@ -44,3 +44,12 @@ Domain lounge update adds four server regression tests, bringing the suite to 73
 - Local browser checks: lobby Next/Back, Show control focused the intended input; F6 returned to the guide and Escape restored its launcher. Separate spectator and viewer seats received distinct tour paths. A 390px viewport had 375px client/content width (scrollbar), no horizontal document overflow and a visible arrow with its target clear of the guide card.
 - 83 automated tests passed, including seven guide-route tests for role/phase handling, modal permission boundaries, hidden/private-data independence and no state mutation. Existing room, council, lounge, Twitch and game tests remain green. Syntax checks passed.
 - No new live Twitch, viewer-load or screen-reader certification claim is made by these guide checks. The underlying real broadcaster command verification and outstanding independent-viewer full round remain as recorded above.
+
+## Domain layout and original Lunar sanctuary — 2 November 2026
+
+- Replaced percentage-positioned chamber hit targets with responsive landmark cells; the guardian has a separate decorative area. The console stacks below the map at narrow widths.
+- Made domain action rows wrap, lounge content scroll, and domain navigation use flexible cells. Resting-room return controls remain available while scrolling.
+- Browser checks covered all six chambers and all six lounges at 390px and 1280px. Visible button/input rectangles had zero intersections; dialogs had no horizontal overflow. Results are saved under ignored artifacts/chamber-layout-*-checks.json and artifacts/lounge-layout-checks.json.
+- Original Lunar sanctuary public visitor access was explicitly requested and enabled. An anonymous HTTP request returned 200. Fivefold Veil's audience remains unchanged.
+- The original cross-origin Lunar scene rendered inside the on-demand resting-room iframe, and its Show controls/Pond camera buttons worked. Returning removed the iframe (count zero), restored lounge focus, and resumed its atmosphere. Opening the resting room stops lounge audio and removes the local grove.
+- Syntax checks and all 83 existing tests passed. No new live Twitch command or full broadcast was tested in this change.

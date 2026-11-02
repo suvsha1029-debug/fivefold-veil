@@ -19,4 +19,21 @@
 #chamber-dialog[data-complete=true] .chamber-guardian{box-shadow:0 0 85px #9cedce50;border-color:#abedd2}#chamber-dialog[data-complete=true] .chamber-routes{color:#b3f2d7;opacity:1}#chamber-dialog[data-motion=true] .echo-arrival .chamber-guardian{animation:chamber-echo .65s ease-out}#chamber-dialog[data-motion=true] .chamber-routes>path.selected{animation:chamber-flow 6s linear infinite}@keyframes chamber-flow{to{stroke-dashoffset:-110}}@keyframes chamber-echo{50%{box-shadow:0 0 80px color-mix(in srgb,var(--world-accent) 50%,transparent)}}
 @media(max-width:960px){.chamber-layout{grid-template-columns:minmax(0,1fr) 250px}.chamber-console{padding:17px}.chamber-map{min-height:450px}.chamber-landmark{width:118px}.landmark-art{width:65px;height:65px}.landmark-name{font-size:11px}.chamber-guardian{width:114px;height:114px}.chamber-guardian .oracle-emblem{width:102px;height:102px}.chamber-portals{grid-template-columns:repeat(3,minmax(0,1fr))}.chamber-portal span{font-size:12px}}
 @media(max-width:680px){#chamber-dialog{width:calc(100vw - 16px);max-height:calc(100dvh - 16px);border-radius:11px}.chamber-header{padding:15px;gap:8px}.chamber-header h2{font-size:24px}.chamber-header .eyebrow{font-size:8px}.chamber-id{font-size:8px}.chamber-team{font-size:9px;max-width:100px;white-space:normal}.chamber-layout{grid-template-columns:1fr}.chamber-map{min-height:370px}.chamber-landmark{width:104px;min-height:93px;padding:3px}.landmark-art{width:59px;height:59px}.landmark-name{font-size:10px}.landmark-phase{font-size:10px;padding:3px 6px}.chamber-guardian{width:96px;height:96px;top:48%}.chamber-guardian .oracle-emblem{width:84px;height:84px}.chamber-map-caption{font-size:7px;left:12px;right:12px;letter-spacing:.4px}.chamber-scene-note{font-size:8px;bottom:9px}.chamber-console{padding:18px;border-left:0;border-top:1px solid var(--border)}.chamber-console h3{font-size:23px}.chamber-phase-pair{padding:8px;max-width:320px}.chamber-console .primary-button{max-width:400px}.chamber-description{margin-bottom:10px}.chamber-atlas{padding:12px}.chamber-portal{padding:6px;column-gap:5px;grid-template-columns:27px minmax(0,1fr)}.chamber-portal img{width:27px;height:34px}.chamber-portal span{font-size:10px}.chamber-portal small{font-size:6px}.chamber-atlas-heading{font-size:8px}.chamber-home-progress{font-size:8px}}
+/* Landmarks occupy real grid cells, so labels and hit targets cannot collide. */
+#chamber-dialog .chamber-map{min-height:440px;padding:190px 18px 56px}
+#chamber-landmarks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;position:relative;z-index:2}
+#chamber-landmarks .chamber-landmark{position:relative;left:auto!important;top:auto!important;transform:none;width:100%;height:auto;min-height:150px;padding:12px 8px;overflow-wrap:anywhere}
+#chamber-dialog .chamber-guardian{top:95px;width:120px;height:120px}
+#chamber-dialog .chamber-guardian .oracle-emblem{width:108px;height:108px}
+#chamber-dialog .chamber-routes{display:none}
+#chamber-dialog .chamber-header{position:relative;flex-wrap:wrap}
+#chamber-dialog .chamber-header>div{min-width:0;max-width:100%}
+#chamber-dialog .chamber-team{white-space:normal}
+#chamber-dialog .chamber-console{min-width:0;overflow-wrap:anywhere}
+#chamber-dialog .chamber-portals{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.room-page .realm-strip{flex-wrap:wrap;overflow:visible}
+.room-page .realm-buttons{max-width:none;flex:1 1 330px;justify-content:flex-start}
+.room-page .realm-buttons button{min-height:44px;white-space:normal}
+@media(max-width:1000px){#chamber-dialog .chamber-layout{grid-template-columns:1fr}#chamber-dialog .chamber-console{border-left:0;border-top:1px solid var(--border)}}
+@media(max-width:480px){#chamber-landmarks{grid-template-columns:1fr}#chamber-landmarks .chamber-landmark{min-height:100px;display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px}#chamber-landmarks .landmark-art{grid-row:span 2}#chamber-landmarks .landmark-name{text-align:left}#chamber-landmarks .landmark-phase{white-space:normal;margin:0}#chamber-dialog .chamber-portals{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){#chamber-dialog *,#chamber-dialog *:before,#chamber-dialog *:after{animation:none!important;transition:none!important}}

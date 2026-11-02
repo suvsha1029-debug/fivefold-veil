@@ -120,3 +120,27 @@ body.in-lounge .sigil-atmosphere {display:none}
 .lounge-shell{pointer-events:none}.lounge-header,.lounge-now-playing,.lounge-conversation,.lounge-footer,.lounge-grove-controls{pointer-events:auto}
 .lounge-grove-controls{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:16px}.lounge-grove-status{font-size:10px;color:#c1d4df;max-width:300px;line-height:1.6}.lounge-grove-views{display:flex;gap:4px}
 @media(max-width:720px){.lounge-grove-controls{margin-bottom:6px}.lounge-grove-status{font-size:9px}.lounge-grove{height:600px}.lounge-world{min-height:380px}}
+/* Let the document grow instead of compressing controls into the scene. */
+#domain-lounge{overflow:auto;overscroll-behavior:contain}
+#domain-lounge .lounge-shell{height:auto;min-height:100%;gap:20px}
+#domain-lounge .lounge-header{flex-wrap:wrap;gap:12px;padding-bottom:16px}
+#domain-lounge .lounge-layout{flex:none;min-width:0;align-items:start;gap:24px;padding:12px 0}
+#domain-lounge .lounge-world{min-width:0;min-height:480px}
+#domain-lounge .lounge-conversation{width:100%;height:620px;max-height:none;min-width:0}
+#domain-lounge .lounge-domains{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}
+#domain-lounge .lounge-domain{min-width:0;overflow-wrap:anywhere}
+#domain-lounge .lounge-domain img{flex-shrink:0}
+#domain-lounge .lounge-grove-views{flex-wrap:wrap}
+#domain-lounge .lounge-rest{align-self:flex-start;margin-top:16px;pointer-events:auto;white-space:normal}
+#domain-lounge .lounge-now-playing{margin-top:20px;flex-shrink:0;background:#101e2af5}
+#domain-lounge .lounge-scenic-space{min-height:110px}
+#domain-lounge .lounge-scenic-sigil{top:20px;left:auto;right:20px}
+#domain-lounge .lounge-orbit{display:none}
+#domain-lounge .lounge-footer{flex-shrink:0}
+@media(max-width:1000px){#domain-lounge .lounge-layout{display:grid;grid-template-columns:1fr}#domain-lounge .lounge-world{max-width:none;min-height:380px}#domain-lounge .lounge-conversation{height:540px}}
+.lunar-rest{width:calc(100vw - 24px);max-width:1600px;height:calc(100dvh - 24px);max-height:none;padding:18px;overflow:auto;background:#101a23;color:#edf2f5}
+.lunar-rest .rest-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:-18px;z-index:2;background:#101a23;padding:12px 0;border-bottom:1px solid #82909b}
+.lunar-rest h2{margin:0;font-size:26px}.lunar-rest .eyebrow{margin:0 0 5px}
+.lunar-rest .rest-note{font-size:13px;line-height:1.7;color:#c6d3dc}.lunar-rest a{text-decoration:underline;color:#e0efff}
+.lunar-rest .rest-frame{height:max(420px,70dvh);width:100%;background:#071420}
+.lunar-rest iframe{display:block;border:0;width:100%;height:100%}

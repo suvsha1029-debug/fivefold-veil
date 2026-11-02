@@ -42,6 +42,7 @@ export class DomainLounge {
             <p class="eyebrow lounge-coordinate"></p>
             <h2 id="lounge-title"></h2>
             <p class="lounge-subtitle"></p>
+            <button type="button" class="lounge-rest outline-button">Visit Lunar resting room ↗</button>
             <div class="lounge-grove-controls" hidden>
               <button type="button" class="lounge-grove-toggle outline-button">Explore original 3D grove ↗</button>
               <div class="lounge-grove-views" hidden role="group" aria-label="Grove viewpoint">
@@ -90,7 +91,29 @@ export class DomainLounge {
         <footer class="lounge-footer"><div class="lounge-domains" role="group" aria-label="Visit a domain lounge"></div><p>EXPLORE TOGETHER. LEAVE A LITTLE LIGHT.</p></footer>
       </div>`;
     document.body.append(this.dialog);
+    this.rest = node('dialog', 'lunar-rest');
+    this.rest.setAttribute('aria-label', 'Lunar resting room');
+    this.rest.innerHTML = `<header class="rest-header"><div><p class="eyebrow">A QUIET PLACE / ORIGINAL LUNAR SANCTUARY</p><h2>Lunar resting room</h2></div><button type="button" class="outline-button">Return to lounge</button></header><p class="rest-note">Drag to look around and scroll to zoom. Use the sanctuary’s scene controls for Garden, Pond, Sky, snow and northern lights. You can also <a href="https://abies-fir-study.shashwatdogra1.chatgpt.site/" target="_blank" rel="noopener noreferrer">open the original sanctuary in a separate tab ↗</a>.</p><div class="rest-frame"></div>`;
+    document.body.append(this.rest);
+    this.rest.querySelector('button').addEventListener('click', () => this.rest.close());
+    this.rest.addEventListener('close', () => {
+      this.rest.querySelector('.rest-frame').replaceChildren();
+      this.updateMotion();
+      if (this.dialog.open) this.q('.lounge-rest').focus();
+    });
     this.q = selector => this.dialog.querySelector(selector);
+    this.q('.lounge-rest').addEventListener('click', () => {
+      this.stopAudio();
+      this.removeGrove();
+      const frame = node('iframe');
+      frame.title = 'Original interactive Lunar sanctuary';
+      frame.src = 'https://abies-fir-study.shashwatdogra1.chatgpt.site/';
+      frame.referrerPolicy = 'no-referrer';
+      frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-pointer-lock');
+      this.rest.querySelector('.rest-frame').replaceChildren(frame);
+      this.rest.showModal();
+      this.updateMotion();
+    });
     const entry = node('button', 'outline-button lounge-enter', 'Enter domain lounge ↗');
     entry.id = 'enter-lounge';
     entry.type = 'button';
@@ -230,6 +253,7 @@ export class DomainLounge {
   }
 
   leave() {
+    if (this.rest.open) this.rest.close();
     this.stopAudio();
     this.removeGrove();
     document.body.classList.remove('in-lounge');
@@ -247,7 +271,7 @@ export class DomainLounge {
   }
 
   updateMotion() {
-    this.dialog.dataset.motion = String(this.motion && this.scene.enabled && !document.hidden && this.dialog.open);
+    this.dialog.dataset.motion = String(this.motion && this.scene.enabled && !document.hidden && this.dialog.open && !this.rest.open);
     this.q('.lounge-motion').textContent = this.scene.motionQuery.matches ? 'Still atmosphere · reduced motion' : this.motion ? 'Pause atmosphere' : 'Resume atmosphere';
     this.q('.lounge-motion').disabled = this.scene.motionQuery.matches;
     this.q('.lounge-motion').setAttribute('aria-pressed', String(!this.motion));
@@ -406,6 +430,7 @@ export class DomainLounge {
   }
 
   destroy() {
+    this.rest.remove();
     this.removeGrove();
     document.removeEventListener('fivefold:effects-change', this.onEffectsChange);
     window.removeEventListener('message', this.onGroveMessage);
