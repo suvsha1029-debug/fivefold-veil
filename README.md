@@ -2,9 +2,15 @@
 
 **Five discoveries. One shared signal.** A cooperative browser/Twitch deduction game built with Codex under the user's creative direction, using the user's original guardian and forest artwork.
 
+## Demo and development story
+
+[Live team rooms](https://signal-lab-twitchcon-4c9e.shashwatdogra1.chatgpt.site/teams) · [Video, captions, and transcript](docs/submission/README.md) · [Development iterations](docs/submission/ITERATIONS.md)
+
+The narrated video is about 2:53 and includes the progression from Signal Lab to Fivefold Veil. It uses screenshots and real source/test excerpts, not captured Codex UI footage. Site visitor access is managed separately from this repository.
+
 ## Clone and run
 
-The complete project source, artwork, server, database schema and tests live in the private GitHub repository [suvsha1029-debug/fivefold-veil](https://github.com/suvsha1029-debug/fivefold-veil).
+The complete project source, artwork, server, database schema and tests live in the public GitHub repository [suvsha1029-debug/fivefold-veil](https://github.com/suvsha1029-debug/fivefold-veil).
 
 With Node.js 22.13 or newer installed, clone the repository and start the local room server. This lightweight server uses Node's built-in modules and needs no package installation.
 
@@ -180,11 +186,11 @@ Browser guests and Twitch relay accounts are **separate identities**. They are n
 
 References: [Twitch app registration](https://dev.twitch.tv/docs/authentication/register-app/), [OAuth authorization-code flow](https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#authorization-code-grant-flow), [EventSub](https://dev.twitch.tv/docs/eventsub/handling-websocket-events/).
 
-**Real broadcaster OAuth and one real chat experiment were verified on 31 October using the earlier flow.** The new room session backend has mocked security/regression tests covering encrypted storage, state/replay checks, expiry, refresh rotation/concurrency and Disconnect races; these are not live Twitch proof. A production reload with the new flow, an independent-viewer complete Twitch round, real reconnection/moderation and OBS broadcast remain to be verified. See QA_REPORT.md and DEMO_SCRIPT.md.
+**Real broadcaster OAuth and one real chat experiment were verified on 31 October using the earlier flow.** The new room session backend has mocked security/regression tests covering encrypted storage, state/replay checks, expiry, refresh rotation/concurrency and Disconnect races; these are not live Twitch proof. Production authorization, same-browser reload restoration, and Disconnect were verified on 2 November. A fresh gameplay command after that reload, an independent-viewer complete Twitch round, reconnection/moderation and OBS broadcast remain to be verified. See QA_REPORT.md and DEMO_SCRIPT.md.
 
 ## Hosting and access
 
-The same Sites project is retained in `.openai/hosting.json`; it now declares D1 binding `DB` instead of static hosting. The existing restricted visitor allowlist is preserved. A join code does not bypass Site access; external viewers need authorized access to the Site before joining. Do not describe the current private preview as publicly available to all Twitch viewers.
+The same Sites project is retained in `.openai/hosting.json`; it now declares D1 binding `DB` instead of static hosting. The GitHub repository is public. Site visitor access is separate: the request to make the Site public is pending because the current Sites connection returns project not found. An unauthenticated HTTP check on 2 November returned 403. A join code does not bypass Site access; do not describe the Site as publicly accessible until the owner connection updates its audience and access is verified.
 
 Capture the host browser window in OBS for the arena/controls, or a joined viewer browser for the keyboard and shared investigation. Separate room browsers synchronize through the server. The legacy solo rehearsal's **Stream view** remains a same-window capture layout, independent of room state.
 

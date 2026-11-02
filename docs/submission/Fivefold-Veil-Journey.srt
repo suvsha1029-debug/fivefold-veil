@@ -1,0 +1,123 @@
+1
+00:00:00,000 --> 00:00:05,849
+Fivefold Veil turns Twitch chat into a research team. Here is how we built it.
+
+2
+00:00:06,867 --> 00:00:10,871
+We began with Signal Lab, a collaborative mystery.
+
+3
+00:00:10,871 --> 00:00:18,983
+Reviewing existing chat puzzles and deduction games shaped our focus: shared evidence, without claiming to invent deduction.
+
+4
+00:00:20,000 --> 00:00:29,198
+Your feedback shaped Fivefold Veil: team domains, original sigils, flexible host control, and guided participation.
+
+5
+00:00:29,198 --> 00:00:32,767
+Testing then drove layout and Twitch login fixes.
+
+6
+00:00:33,800 --> 00:00:39,828
+The streamer names a room, chooses the group size and timer, then invites the audience.
+
+7
+00:00:40,833 --> 00:00:45,332
+Choose viewers lead, shared control, or host led.
+
+8
+00:00:45,332 --> 00:00:52,201
+In shared control, viewers experiment and vote while the host confirms discoveries and controls the clock.
+
+9
+00:00:53,233 --> 00:00:57,207
+Viewers enter a room code and display name to join a team.
+
+10
+00:00:57,207 --> 00:00:59,631
+They can also simply watch.
+
+11
+00:01:00,633 --> 00:01:05,132
+Choose a color, shape, and pulse count using the emoji keyboard.
+
+12
+00:01:05,132 --> 00:01:10,185
+Send the experiment and inspect the guardian’s response.
+
+13
+00:01:11,200 --> 00:01:14,079
+The shared journal records the evidence.
+
+14
+00:01:14,079 --> 00:01:19,272
+An experiment, or correctly linking existing evidence, earns a vote.
+
+15
+00:01:19,272 --> 00:01:22,276
+Even a failed signal can eliminate a theory.
+
+16
+00:01:23,300 --> 00:01:28,524
+Confirm five discoveries, then combine their rules into one shared signal.
+
+17
+00:01:28,524 --> 00:01:33,372
+That is the objective; these screenshots do not show a completed win.
+
+18
+00:01:34,400 --> 00:01:37,919
+Step by step guidance highlights the controls.
+
+19
+00:01:37,919 --> 00:01:42,837
+Readable mode and optional reduced effects help new participants follow along.
+
+20
+00:01:43,867 --> 00:01:49,950
+Six domains give teams distinct homes, original sigils, and shared landmark puzzles.
+
+21
+00:01:50,967 --> 00:01:55,440
+This saved receipt shows an earlier real Twitch command reaching the game.
+
+22
+00:01:55,440 --> 00:01:59,284
+The surrounding gameplay screenshots come from a rehearsal.
+
+23
+00:02:00,300 --> 00:02:04,879
+I directed Codex to fix Twitch login disappearing after refresh.
+
+24
+00:02:04,879 --> 00:02:11,167
+The work added encrypted server storage, remembered sessions, and accessible connection controls.
+
+25
+00:02:12,200 --> 00:02:16,099
+A production test exposed a hosting incompatibility.
+
+26
+00:02:16,099 --> 00:02:23,506
+We traced it to an unsupported redirect mode and corrected it, while refusing redirects that could forward credentials.
+
+27
+00:02:24,533 --> 00:02:29,687
+Regression tests cover refresh, replay protection, and disconnect races.
+
+28
+00:02:29,687 --> 00:02:37,640
+These are real test results using mocked Twitch services. The full project suite passed one hundred fourteen tests.
+
+29
+00:02:38,667 --> 00:02:43,120
+On the published site, the broadcaster connected successfully.
+
+30
+00:02:43,120 --> 00:02:48,929
+Reload restored chat without another authorization, and Disconnect removed the saved login.
+
+31
+00:02:48,929 --> 00:02:52,358
+Explore apart. Think together.
