@@ -4,9 +4,9 @@
 
 ## Demo and development story
 
-[Live team rooms](https://signal-lab-twitchcon-4c9e.shashwatdogra1.chatgpt.site/teams) · [YouTube: development journey](https://www.youtube.com/watch?v=KSUtdG_mDbc) · [YouTube: explained](https://www.youtube.com/watch?v=p1Gp0-6BwVY) · [Video files, captions, and transcript](docs/submission/README.md) · [Development iterations](docs/submission/ITERATIONS.md)
+[Live team rooms](https://signal-lab-twitchcon-4c9e.shashwatdogra1.chatgpt.site/teams) · [YouTube: final demo](https://www.youtube.com/watch?v=y5LJZHMlRqA) · [YouTube: gameplay guide](https://www.youtube.com/watch?v=4RBFLq_pbHc) · [Video files, captions, and transcript](docs/submission/README.md) · [Development iterations](docs/submission/ITERATIONS.md)
 
-[Download the final narrated demo](docs/submission/Fivefold-Veil-Final.mp4) and its [English captions](docs/submission/Fivefold-Veil-Final.srt). The 2:53 final cut shows the original Codex conversation, a viewer joining Crown in Twitch chat, and a separate Twitch experiment recorded as PASS in the game journal. The YouTube links above point to earlier walkthroughs.
+[Download the final narrated demo](docs/submission/Fivefold-Veil-Final.mp4) and its [English captions](docs/submission/Fivefold-Veil-Final.srt). The 2:53 final cut shows the original Codex conversation, a viewer joining Crown in Twitch chat, and a separate Twitch experiment recorded as PASS in the game journal.
 
 ## Clone and run
 

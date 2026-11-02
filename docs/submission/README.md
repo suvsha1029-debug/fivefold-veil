@@ -2,6 +2,8 @@
 
 [Final demo MP4](Fivefold-Veil-Final.mp4) · [Final English captions](Fivefold-Veil-Final.srt). The final cut runs 2:53.48. At 0:07 the original Codex conversation shows the prototype, research and artwork iterations. At 0:53 a viewer joins Crown in Twitch chat. At 1:01 a separate broadcaster experiment reaches the journal and earns PASS. The development cards later in the video show source excerpts and test results.
 
+[Watch the final demo on YouTube](https://www.youtube.com/watch?v=y5LJZHMlRqA) · [Watch the short gameplay guide](https://www.youtube.com/watch?v=4RBFLq_pbHc). Use the final demo in the Devpost video field.
+
 ## Earlier walkthroughs
 
 - [Download the narrated video](Fivefold-Veil-Journey.mp4) — approximately 2:53, 1920 × 1080, American English synthetic narration (Microsoft Zira Desktop).
@@ -16,7 +18,7 @@ The creator uploaded both videos publicly on 2 November:
 - [Fivefold Veil Journey](https://www.youtube.com/watch?v=KSUtdG_mDbc) — main walkthrough with research and iterations.
 - [Fivefold Veil Explained](https://www.youtube.com/watch?v=p1Gp0-6BwVY) — supporting explanation.
 
-Both titles returned YouTube oEmbed metadata without authentication, and playback was observed advancing in the controlled browser. Public visibility is shown in the creator-supplied YouTube Studio screenshot. The two YouTube links above are earlier cuts. Upload the final MP4 to YouTube and use that watch link in Devpost.
+Both titles returned YouTube oEmbed metadata without authentication, and playback was observed advancing in the controlled browser. Public visibility is shown in the creator-supplied YouTube Studio screenshot. These two earlier links are retained for reference.
 
 Original artwork and creative direction are credited to the project creator; Codex assisted implementation, debugging, testing, and preparation of this walkthrough. See [asset provenance](../../IP_NOTES.md).
 

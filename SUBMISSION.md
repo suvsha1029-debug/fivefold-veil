@@ -51,7 +51,8 @@ Room login uses runtime `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, `TWITCH_TOKE
 - [ ] Independently verify the website in an isolated signed-out browser; automated HTTP checks are blocked by Cloudflare 1010
 - [x] Upload both narrated walkthroughs publicly to YouTube and verify their watch links/playback
 - [x] Export the 2:53 final demo with Twitch gameplay and footage of the original Codex build conversation
-- [ ] Upload the final cut to YouTube and confirm the watch link in Devpost
+- [x] Publish the [final demo](https://www.youtube.com/watch?v=y5LJZHMlRqA) and [short gameplay guide](https://www.youtube.com/watch?v=4RBFLq_pbHc) on YouTube
+- [ ] Confirm the final demo watch link in the Devpost entry
 - [ ] Add project description, demo URL, source URL, screenshots, and Codex use details on Devpost
 - [ ] Obtain the actual main Codex session ID; never substitute the Site ID, repository ID, or this checklist
 - [ ] Review the entry and finish Submit; confirm it says Submitted
