@@ -148,16 +148,24 @@ export class TwitchSessionApi {
     if (Number.isInteger(httpStatus) && httpStatus >= 0 && httpStatus <= 599) entry.httpStatus = httpStatus;
     if (error) entry.exception = DIAGNOSTIC_EXCEPTIONS.has(error.name) ? error.name : 'OtherError';
     if (contentType !== undefined) entry.contentType = !contentType ? 'missing' : /^application\/json(?:\s*;|$)/i.test(contentType) ? 'json' : /^text\/html(?:\s*;|$)/i.test(contentType) ? 'html' : /^text\/plain(?:\s*;|$)/i.test(contentType) ? 'text' : 'other';
-    if (['json_invalid', 'token_rejected', 'identity_rejected'].includes(failure)) entry.failure = failure;
+    if (['json_invalid', 'token_rejected', 'identity_rejected', 'redirect_rejected'].includes(failure)) entry.failure = failure;
     try { this.diagnostic(entry); } catch {}
   }
 
   async upstream(url, init = {}, stage) {
+    let response;
     try {
-      const response = await this.fetchImpl(url, { ...init, redirect: 'error', signal: AbortSignal.timeout(6000) });
-      this.report(stage, response.status, undefined, response.headers.get('content-type'));
-      return response;
+      // Workers supports manual redirects; never follow a response that could
+      // forward Authorization headers or the OAuth token-exchange POST body.
+      response = await this.fetchImpl(url, { ...init, redirect: 'manual', signal: AbortSignal.timeout(6000) });
     } catch (error) { this.report(stage, undefined, error); throw unavailable(); }
+    if (response.status >= 300 && response.status <= 399) {
+      this.report(stage, response.status, undefined, response.headers.get('content-type'), 'redirect_rejected');
+      try { await response.body?.cancel(); } catch {}
+      throw unavailable();
+    }
+    this.report(stage, response.status, undefined, response.headers.get('content-type'));
+    return response;
   }
 
   async cryptoKey() {

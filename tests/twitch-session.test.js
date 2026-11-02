@@ -373,3 +373,42 @@ test('diagnostic logger failures cannot prevent successful authorization', async
   assert.equal(response.status, 200);
   assert.equal((await response.json()).connected, true);
 });
+
+test('upstream requests use Workers-supported manual redirects instead of unsupported redirect error mode', async () => {
+  const f = fixture(), original = f.options.fetchImpl;
+  const api = new TwitchSessionApi(f.store, { ...f.options, fetchImpl: async (url, init) => {
+    if (init.redirect === 'error') throw new TypeError('redirect error mode is not implemented');
+    assert.equal(init.redirect, 'manual');
+    return original(url, init);
+  } });
+  const start = await f.call('start', { method: 'POST' });
+  const state = new URL((await start.json()).authorizationUrl).searchParams.get('state');
+  const response = await api.fetch(f.request('exchange', { method: 'POST', body: { state, code: 'temporary-code' } }));
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).connected, true);
+  assert.equal(f.calls.every(call => call.init.redirect === 'manual'), true);
+});
+
+test('upstream redirects are rejected without following or disclosing their destination', async () => {
+  for (const status of [300, 301, 302, 303, 304, 307, 308, 399]) {
+    const f = fixture(), calls = [];
+    const destination = 'https://attacker.example/private?token=' + ACCESS;
+    const api = new TwitchSessionApi(f.store, { ...f.options, fetchImpl: async (url, init) => {
+      calls.push({ url, init });
+      assert.equal(init.redirect, 'manual');
+      return new Response(null, { status, headers: { Location: destination } });
+    } });
+    const start = await f.call('start', { method: 'POST' });
+    const state = new URL((await start.json()).authorizationUrl).searchParams.get('state');
+    const response = await api.fetch(f.request('exchange', { method: 'POST', body: { state, code: 'temporary-code' } }));
+    assert.equal(response.status, 503);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, 'https://id.twitch.tv/oauth2/token');
+    assert.equal(f.jar.has('fv_twitch_session'), false);
+    assert.equal(response.headers.has('location'), false);
+    const serialized = JSON.stringify(f.diagnostics) + await response.text();
+    for (const sensitive of [destination, 'attacker.example', ACCESS, ENV.TWITCH_CLIENT_SECRET, state, 'temporary-code']) assert.equal(serialized.includes(sensitive), false);
+    assert.equal(f.diagnostics.at(-1).failure, 'redirect_rejected');
+    assert.equal(f.diagnostics.at(-1).httpStatus, status);
+  }
+});

@@ -47,3 +47,4 @@
 .twitch-live-status[data-state="error"]{border-inline-start:3px solid #dbb88d}
 #room-twitch-dialog>#room-twitch-retry,#room-twitch-dialog>#room-twitch-disconnect{margin-top:.75rem}
 #room-twitch-status{min-height:1.5em;color:var(--text,#e5eaed)}
+#room-twitch-dialog .icon-button{min-width:44px;min-height:44px;flex-shrink:0}
