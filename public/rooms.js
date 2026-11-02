@@ -25,6 +25,7 @@ let hostChoices={};
 let contentKey='';
 const twitchSession=new TwitchSessionClient();
 let restoreSerial=0,twitchConfigured=null,twitchAuthBusy=false;
+let loggingOut=false;
 let oauth=null,oauthReturned=false;try{oauth=consumeTwitchCode();oauthReturned=!!oauth;}catch(error){oauthReturned=true;setTimeout(()=>toast(error.message,true),0);}
 const scene=new DomainScene();
 const keyboard=new EmojiKeyboard($('emoji-keyboard'),{onChange:renderKeyboard,onSubmit:()=>sendSignal()});
@@ -82,6 +83,7 @@ function enter(value,next){
   $('lobby').hidden=true;
   $('room-view').hidden=false;
   $('lobby-button').hidden=false;
+  $('leave-viewer').hidden=value.role!=='member';
   applyState(next);
   if(next.canRelay&&!oauth)restoreTwitch();
   if(pendingChamber&&value.role!=='spectator'){
@@ -117,7 +119,21 @@ async function refresh(){
 for(const emoji of avatars){const button=node('button','avatar-key',emoji);button.type='button';button.setAttribute('aria-label',`Avatar ${emoji}`);button.setAttribute('aria-pressed',String(emoji===avatar));button.addEventListener('click',()=>{avatar=emoji;for(const b of $('avatar-picker').children)b.setAttribute('aria-pressed',String(b===button));});$('avatar-picker').append(button);}
 $('create-form').addEventListener('submit',async event=>{event.preventDefault();const submit=event.submitter;submit.disabled=true;try{const result=await api('',{method:'POST',token:null,body:{title:$('room-title').value,durationMs:Number($('room-duration').value),minimumTeams:Number($('room-minimum-teams').value),controlMode:$('create-control-mode').value}});enter({code:result.state.code,token:result.token,role:'host'},result.state);toast('Room created. Invite your teams; your host key stays in this browser.');}catch(error){toast(error.message,true);}finally{submit.disabled=false;}});
 $('join-form').addEventListener('submit',async event=>{event.preventDefault();const submit=event.submitter;submit.disabled=true;const code=$('join-code').value.trim().toUpperCase();try{const remembered=lookup(code,'member');if(remembered){const next=await api(`/${code}`,{token:remembered.token});if(next.me){enter(remembered,next);toast('Your browser seat has rejoined.');return;}}const result=await api(`/${code}/join`,{method:'POST',token:null,body:{name:$('join-name').value,avatar,team:$('join-team').value}});enter({code,token:result.token,role:'member'},result.state);toast('Welcome to the expedition. Your team ID is on your identity card.');}catch(error){showRoomLoadError(error);}finally{submit.disabled=false;}});
-$('lobby-button').addEventListener('click',()=>{restoreSerial++;twitch.disconnect(false);connection={state:'disconnected'};session=null;state=null;lounge.render();audienceView=false;document.body.classList.remove('audience-mode');worlds.teamId=null;worlds.preview=null;worlds.render();scene.setState('paused');$('lobby').hidden=false;$('room-view').hidden=true;$('lobby-button').hidden=true;history.replaceState(null,'',location.pathname);guidedHelp.update();});
+$('lobby-button').addEventListener('click',()=>{restoreSerial++;twitch.disconnect(false);connection={state:'disconnected'};session=null;state=null;lounge.render();audienceView=false;document.body.classList.remove('audience-mode');worlds.teamId=null;worlds.preview=null;worlds.render();scene.setState('paused');$('lobby').hidden=false;$('room-view').hidden=true;$('lobby-button').hidden=true;$('leave-viewer').hidden=true;history.replaceState(null,'',location.pathname);guidedHelp.update();});
+
+$('leave-viewer').addEventListener('click',()=>{
+  if(session?.role!=='member')return;
+  try{
+    const seats=readStore(sessionStorage,GUEST_KEY);
+    delete seats[session.code];
+    if(seats.last===session.code)delete seats.last;
+    sessionStorage.setItem(GUEST_KEY,JSON.stringify(seats));
+  }catch{toast('This tab could not forget your seat. Try again.',true);return;}
+  $('lobby-button').click();
+  $('join-name').value='';
+  $('join-name').focus();
+  toast('You left your viewer seat. Your contributions stay in the round.');
+});
 
 function renderTeams(){
   const signature=state.teams.map(t=>`${t.eyeId}:${t.members}:${t.contributors}:${t.sealed}:${t.domain}`).join('|')+selectedEye;
@@ -275,19 +291,25 @@ const twitch=new TwitchChat({sessionClient:twitchSession,onMessage:message=>{
 }});
 function renderTwitchConnection(){
   const restoring=['restoring','connecting','reconnecting'].includes(connection.state);
-  const working=restoring||twitchAuthBusy;
+  const working=restoring||twitchAuthBusy||loggingOut;
   const connected=connection.state==='connected';
   const message=twitchAuthBusy?'Opening Twitch sign-in…':connection.message||(connected?`Connected to @${connection.channel}`:'Twitch is optional. Connect your channel to receive chat commands.');
   $('room-twitch-status').textContent=message;
   $('room-twitch-status').setAttribute('aria-busy',String(working));
+  $('relay-controls').hidden=!state?.canRelay;
   $('room-twitch-live').hidden=!state?.canRelay;
   $('room-twitch-live').textContent=connected?`Twitch chat connected · @${connection.channel} · saved sign-in`:`Twitch chat · ${message}`;
   $('room-twitch-live').dataset.state=connection.state;
   $('room-twitch-button').textContent=connected?`Twitch: @${connection.channel}`:working?'Twitch: connecting…':connection.state==='error'?'Reconnect Twitch':'Connect Twitch';
   $('room-twitch-form').hidden=connected||restoring||twitchConfigured===false;
-  $('room-twitch-form').querySelector('button').disabled=twitchAuthBusy;
+  $('room-twitch-form').querySelector('button').disabled=working;
   $('room-twitch-retry').hidden=connection.state!=='error'||working||twitchConfigured===false;
-  $('room-twitch-disconnect').hidden=!connected&&connection.state!=='error';
+  for(const id of ['room-twitch-disconnect','twitch-logout']){
+    const button=$(id);
+    button.hidden=!state?.canRelay||(!connected&&connection.state!=='error'&&!loggingOut&&connection.state!=='reconnecting');
+    button.disabled=loggingOut;
+    button.textContent=loggingOut?'Logging out…':'Log out of Twitch';
+  }
 }
 async function restoreTwitch(){
   if(!session||!state?.canRelay)return;
@@ -305,7 +327,29 @@ async function restoreTwitch(){
 $('room-twitch-button').addEventListener('click',()=>$('room-twitch-dialog').showModal());
 $('room-twitch-retry').addEventListener('click',restoreTwitch);
 $('room-twitch-form').addEventListener('submit',async event=>{event.preventDefault();if(twitchAuthBusy||!session||!state?.canRelay)return;const seat=session,serial=++restoreSerial;twitchAuthBusy=true;renderTwitchConnection();try{remember(seat);sessionStorage.setItem('fivefold-twitch-return',JSON.stringify({code:seat.code,role:seat.role}));const url=await twitchSession.start();if(session===seat&&serial===restoreSerial)location.assign(url);}catch(error){if(session===seat&&serial===restoreSerial)toast(error.message,true);}finally{twitchAuthBusy=false;renderTwitchConnection();}});
-$('room-twitch-disconnect').addEventListener('click',async()=>{++restoreSerial;twitch.disconnect(false);const button=$('room-twitch-disconnect');button.disabled=true;try{await twitchSession.request('disconnect',{});connection={state:'disconnected',message:'Disconnected and saved sign-in removed. Browser teams can continue.'};}catch{connection={state:'error',message:'Chat stopped, but saved sign-in could not be removed. Retry Disconnect when online.'};}finally{button.disabled=false;renderTwitchConnection();if(state)render();}});
+async function logoutTwitch(){
+  if(loggingOut||!state?.canRelay)return;
+  loggingOut=true;
+  const seat=session;
+  ++restoreSerial;
+  twitch.disconnect(false);
+  connection={state:'disconnecting',message:'Removing saved Twitch sign-in…'};
+  renderTwitchConnection();
+  try{
+    await twitchSession.request('disconnect',{});
+    if(session!==seat)return;
+    connection={state:'disconnected',message:'Logged out of Twitch for Fivefold Veil on this browser. The room is still open.'};
+    if($('room-twitch-dialog').open)$('room-twitch-dialog').close();
+    $('room-twitch-button').focus();
+  }catch{
+    if(session===seat)connection={state:'error',message:'Chat stopped. Saved sign-in could not be removed. Try Log out of Twitch again.'};
+  }finally{
+    loggingOut=false;
+    renderTwitchConnection();
+  }
+}
+$('room-twitch-disconnect').addEventListener('click',logoutTwitch);
+$('twitch-logout').addEventListener('click',logoutTwitch);
 
 setInterval(()=>{if(!document.hidden)refresh();},3000);setInterval(()=>{if(!document.hidden)renderClock();},250);
 document.addEventListener('visibilitychange',()=>{chambers.render();if(!document.hidden)refresh();});
