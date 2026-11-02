@@ -145,7 +145,7 @@ Team rooms use a server-side OAuth authorization-code flow. Configure the server
 3. Add `TWITCH_APP_ORIGIN` followed by `/teams` as an OAuth Redirect URL in the Twitch app. For the current Site this is `https://signal-lab-twitchcon-4c9e.shashwatdogra1.chatgpt.site/teams`. The deployed origin and registered callback must match exactly. A custom domain or new host needs its own matching configuration.
 4. For local room testing, copy [.env.example](.env.example) to ignored `.env.local`, fill it locally, and run `node --env-file=.env.local server.mjs`. The lightweight server uses `http://localhost:4173` (or the configured `PORT`) as its origin; register `http://localhost:4173/teams` for the default port and open that exact localhost address. This local environment file is not a deployment-secret mechanism. The framework/Cloudflare preview needs the same values in its own server runtime environment.
 
-The production runtime values have been configured. The new production connect → reload → chat-command test is still pending; configuration alone does not establish that live reconnection works.
+On 2 November, the deployed team room completed real Twitch authorization for @shashu1029, restored its EventSub connection after a page reload without authorizing again, and stopped restoring after Disconnect. Reconnection after that test also succeeded. A fresh gameplay command after this auth change, an independent-viewer complete encounter, and a full live broadcast remain separate checks; see [QA_REPORT.md](QA_REPORT.md).
 
 ### Remembered sign-in and Disconnect
 

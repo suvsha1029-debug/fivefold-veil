@@ -31,14 +31,15 @@ Team-room views are at `/teams`. The current Site remains owner-private: room in
 - [x] Team-room server-side authorization-code login, encrypted token storage, refresh rotation and same-browser HttpOnly session restoration for up to seven days
 - [x] Disconnect invalidates remembered login; separate browser-room host controls remain usable
 
-Room login uses runtime `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, `TWITCH_TOKEN_KEY` (64 hex characters) and `TWITCH_APP_ORIGIN`; the exact registered callback is that origin followed by `/teams`. Secrets belong only in server runtime settings; [.env.example](.env.example) is a placeholder-only local template. The production runtime has been configured, but a live reload test of this new flow is still pending. The legacy solo rehearsal keeps its older browser-memory access-token flow and requires reconnecting after reload. Seven days is the remembered room session's maximum lifetime; revocation or expiry can require earlier sign-in. See [README setup](README.md#server-configuration).
+Room login uses runtime `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, `TWITCH_TOKEN_KEY` (64 hex characters) and `TWITCH_APP_ORIGIN`; the exact registered callback is that origin followed by `/teams`. Secrets belong only in server runtime settings; [.env.example](.env.example) is a placeholder-only local template. Real production authorization, automatic restoration after reload, and Disconnect followed by reload were verified on 2 November for @shashu1029. A fresh gameplay command after this authentication change remains unverified. The legacy solo rehearsal keeps its older browser-memory access-token flow and requires reconnecting after reload. Seven days is the remembered room session's maximum lifetime; revocation or expiry can require earlier sign-in. See [README setup](README.md#server-configuration).
 
 ## Required next
 
 - [x] Complete Twitch email/2FA and app registration; record the app Client ID
 - [x] Real broadcaster OAuth and one broadcaster-chat `!test` verified on 31 October
-- [ ] Verify the new production code-flow login, reload the same host browser, and receive a fresh real Twitch chat command without authorizing again; earlier-flow verification does not cover this
-- [ ] Verify **Disconnect & forget this browser** removes remembered Twitch sign-in while browser-room controls still work
+- [x] Verify real production code-flow login and automatic EventSub restoration after reloading the same host browser without authorizing again
+- [ ] Receive a fresh real Twitch gameplay command after that reload; earlier-flow command evidence does not cover this
+- [x] Verify **Disconnect & forget this browser** removes remembered Twitch sign-in, reload remains disconnected, and the saved host room remains available
 - [ ] Complete an independent-viewer live Twitch round covering `!solve` and `!bind`
 - [ ] Test interruption/reconnect and OBS Window Capture on the user's PC
 - [ ] Playtest with a streamer/viewers and refine clarity/pacing from observed feedback
@@ -52,7 +53,7 @@ Room login uses runtime `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, `TWITCH_TOKE
 
 Deadline listed by the event: **2 November 2026, 2:00 PM PST / 3 November, 3:30 AM IST**. Recheck the official countdown before submission. Preserve the submitted version and linked materials until winners are announced, per organizer FAQ. The current Site uses a restricted visitor allowlist and the GitHub repository is private; neither is automatically judge-accessible.
 
-Recording instructions, a 2:50 storyboard, and ready narration are in [DEMO_SCRIPT.md](DEMO_SCRIPT.md). [Codex development capture](docs/CODEX_DEVELOPMENT_CAPTURE.md) plans a truthful 20–30-second segment of the actual chat, auth implementation, tests and app reload. These are instructions, not created footage or confirmation that a video satisfies the event's rules. The script is prepared; the video is not yet recorded/uploaded.
+Recording instructions, a 2:50 storyboard, and ready narration are in [DEMO_SCRIPT.md](DEMO_SCRIPT.md). [Codex development capture](docs/CODEX_DEVELOPMENT_CAPTURE.md) plans a truthful 20–30-second segment of the actual chat, auth implementation, tests and app reload. These are instructions, not created footage or confirmation that a video satisfies the event's rules. A 2:50 screenshot walkthrough with US English narration and captions is prepared locally. It is not a live-action recording and does not yet include actual Codex development footage; it has not been uploaded to YouTube.
 
 ## Demo outline — 2 minutes 50 seconds
 

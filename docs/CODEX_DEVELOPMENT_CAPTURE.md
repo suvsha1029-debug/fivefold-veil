@@ -26,3 +26,12 @@ If the final action takes longer than ten seconds, trim another segment or use a
 ## Finish honestly
 
 Use a calm English voiceover; a US English voice is fine. Add captions matching the actual actions. Credit the user's original artwork and creative direction, and describe Codex's implementation/testing contribution. The segment does not replace the rest of the gameplay demonstration, required links, access checks or the actual main Codex session ID. Save the final video and review every frame for private details before upload.
+
+
+## This iteration is ready to show
+
+The actual 2 November sequence is in this chat and Git history: implement remembered server login → find the real production 503 → check Cloudflare's request documentation → replace the unsupported redirect mode without following redirects → pass 114 tests → verify real Twitch connection, reload restoration and Disconnect on the published site. This is useful evidence of iteration.
+
+A concise voiceover for the real footage: “I directed Codex to fix Twitch login after refresh. A live deployment exposed a hosting incompatibility. Codex traced it, added regression tests, and corrected it. We then verified Twitch reconnecting after reload and forgetting the session on Disconnect.”
+
+The completed screenshot walkthrough is approximately 2:50. Replace about 25 seconds of optional lounge or council material with this actual development segment; do not append it beyond the three-minute limit. Keep live Twitch functionality visible elsewhere and review the whole edited video before upload.
