@@ -128,10 +128,32 @@ The host can enable **The Witness Seat** in a room. After a correct seal, useful
 
 The team-room Twitch adapter also subscribes to chat deletion/clear events with the existing `user:read:chat` scope. These remove matching spotlight text; the host must remain connected for moderation to synchronize. Browser guests are not linked to Twitch identities. Live broadcast validation remains required.
 
-1. Verify the broadcaster's Twitch email, enable 2FA, and register a Confidential application in the [Developer Console](https://dev.twitch.tv/console/apps). The current browser adapter uses implicit authorization. Twitch documents Public clients as device-code-only. This adapter takes only the Client ID and never asks for the client secret. See [Twitch OAuth flows](https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/).
-2. In the team's host view, open **Connect Twitch**. Add its exact displayed redirect URL to the Twitch app. Team-room and solo-rehearsal paths have different callback URLs.
-3. Paste the Client ID only, authorize as the account owning the channel, and wait for the connected channel name.
-4. Start/resume the encounter. The host's browser validates Twitch identity/scope and relays recognized commands to its room using the private host credential. Twitch access tokens remain in browser memory; refreshing requires reconnecting.
+Team rooms use a server-side OAuth authorization-code flow. Configure the server once; streamers then choose **Connect Twitch → Connect securely with Twitch**, authorize the account owning their channel, and wait for the connected channel name. Start or resume the encounter after the relay reconnects. Browser teams and private room-host controls work independently of Twitch sign-in.
+
+### Server configuration
+
+1. Verify the broadcaster's Twitch email, enable 2FA, and register a **Confidential** application in the [Developer Console](https://dev.twitch.tv/console/apps).
+2. Configure these **server runtime** values. Use the hosting provider's server-secret settings in production; do not put secrets in browser JavaScript, public assets, source control, screenshots or the submission video.
+
+   | Variable | Value |
+   | --- | --- |
+   | `TWITCH_CLIENT_ID` | The registered app's Client ID. This identifier is public. |
+   | `TWITCH_CLIENT_SECRET` | The same app's Client Secret; server-only. |
+   | `TWITCH_TOKEN_KEY` | A stable, cryptographically random 32-byte key encoded as 64 hexadecimal characters; server-only. Changing it makes existing remembered logins unreadable and requires reconnecting. |
+   | `TWITCH_APP_ORIGIN` | The exact production HTTPS origin, with no path, query or fragment, e.g. `https://signal-lab-twitchcon-4c9e.shashwatdogra1.chatgpt.site`. |
+
+3. Add `TWITCH_APP_ORIGIN` followed by `/teams` as an OAuth Redirect URL in the Twitch app. For the current Site this is `https://signal-lab-twitchcon-4c9e.shashwatdogra1.chatgpt.site/teams`. The deployed origin and registered callback must match exactly. A custom domain or new host needs its own matching configuration.
+4. For local room testing, copy [.env.example](.env.example) to ignored `.env.local`, fill it locally, and run `node --env-file=.env.local server.mjs`. The lightweight server uses `http://localhost:4173` (or the configured `PORT`) as its origin; register `http://localhost:4173/teams` for the default port and open that exact localhost address. This local environment file is not a deployment-secret mechanism. The framework/Cloudflare preview needs the same values in its own server runtime environment.
+
+The production runtime values have been configured. The new production connect → reload → chat-command test is still pending; configuration alone does not establish that live reconnection works.
+
+### Remembered sign-in and Disconnect
+
+The room server exchanges the short-lived OAuth code, checks Twitch identity/client/scope, and stores access and refresh tokens encrypted in its database. Room-browser JavaScript receives public connection details and an opaque **HttpOnly** session cookie, not the Twitch tokens. The cookie uses **Secure** on HTTPS, **SameSite=Lax**, and the `/api/twitch` path. Same-browser sign-in can be restored for up to **seven days**; this is a fixed session lifetime, not a promise that Twitch access remains valid for seven days. Cookies being cleared, revocation, session expiry or changed server encryption keys require a fresh sign-in. The server refreshes expired/rejected access tokens when Twitch allows it; temporary failures offer retry instead of silently discarding a valid remembered session.
+
+On a saved host or captain seat, reloading checks that session and reconnects the browser's EventSub relay. This does not run chat relay in the background when the browser is closed. **Disconnect & forget this browser** invalidates the server session, clears its cookies and attempts upstream token revocation. Browser-room controls remain available. Room-host keys and Twitch login are separate credentials; remembering Twitch does not grant a different browser room-host access.
+
+This change applies to **team rooms at `/teams`**. The older **solo rehearsal** still uses implicit authorization and an access token held only in browser memory, with no refresh-token persistence; it needs reconnecting after a reload. Do not describe every project mode as keeping all Twitch tokens out of browser memory.
 
 ```text
 !team crown
@@ -156,9 +178,9 @@ Eye names: crown/dusk/heart/dawn/root. Colours: red/blue/amber. Shapes: circle/t
 
 Browser guests and Twitch relay accounts are **separate identities**. They are not linked, and the same person could use both. This is a cooperative prototype, not a Sybil-resistant ranked or prize competition. Server control trusts the host's relay; it does not independently authenticate each Twitch viewer. The adapter requests read-only `user:read:chat`, filters duplicate Twitch deliveries, and handles scope/client validation, reconnect handoff, backoff and revocation. An interrupted host Twitch connection pauses an active room; explicitly resume after reconnecting.
 
-References: [Twitch app registration](https://dev.twitch.tv/docs/authentication/register-app/), [OAuth](https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#implicit-grant-flow), [EventSub](https://dev.twitch.tv/docs/eventsub/handling-websocket-events/).
+References: [Twitch app registration](https://dev.twitch.tv/docs/authentication/register-app/), [OAuth authorization-code flow](https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#authorization-code-grant-flow), [EventSub](https://dev.twitch.tv/docs/eventsub/handling-websocket-events/).
 
-**Real broadcaster OAuth and one real chat experiment were verified on 31 October.** Automated Twitch tests still use mocked services. An independent-viewer complete Twitch round, real reconnection/moderation and OBS broadcast remain to be verified; browser room testing does not prove those. See QA_REPORT.md and DEMO_SCRIPT.md.
+**Real broadcaster OAuth and one real chat experiment were verified on 31 October using the earlier flow.** The new room session backend has mocked security/regression tests covering encrypted storage, state/replay checks, expiry, refresh rotation/concurrency and Disconnect races; these are not live Twitch proof. A production reload with the new flow, an independent-viewer complete Twitch round, real reconnection/moderation and OBS broadcast remain to be verified. See QA_REPORT.md and DEMO_SCRIPT.md.
 
 ## Hosting and access
 
@@ -188,6 +210,7 @@ Tests cover deterministic rule generation, parsing including emoji, timing, voti
 
 - `public/`: solo rehearsal, room UI, emoji keyboard, game engine, art and Twitch adapter
 - `server/rooms.js`: room service, public/private state projections and memory/D1 stores
+- `server/twitch-session.js`: server-side room OAuth, encrypted token vault, refresh and revocation
 - `app/`: root HTML/API routes; `worker/` and `scripts/`: supported Sites runtime/build integration
 - `db/schema.ts`, `drizzle/`: database schema and immutable generated migrations
 - `tests/`: Node test suite; `SUBMISSION.md`: remaining contest work
@@ -211,7 +234,7 @@ Taiga and Lunar Waters also offer **Explore original 3D grove**, reusing the own
 
 Create a room, copy the viewer invite, optionally connect Twitch, then begin. Extra control/timer settings are expandable. Viewers join with a display name; the next-step card guides experiments, evidence and votes. Optional domains, Witness Seat and Council follow the main game. Reduced effects persist and respect system motion preferences. Shared-room updates arrive every three seconds; this is not a zero-latency claim.
 
-[DEMO_SCRIPT.md](DEMO_SCRIPT.md) contains a 2:50 recording plan, ready narration, OBS steps, real command templates and upload instructions. [QA_REPORT.md](QA_REPORT.md) separates local/browser verification from live Twitch proof and outstanding checks.
+[DEMO_SCRIPT.md](DEMO_SCRIPT.md) contains a 2:50 recording plan, ready narration, OBS steps, real command templates and upload instructions. [Codex development capture](docs/CODEX_DEVELOPMENT_CAPTURE.md) gives a truthful 20–30-second segment showing the actual implementation, test result and app reload. [QA_REPORT.md](QA_REPORT.md) separates local/browser verification from live Twitch proof and outstanding checks.
 
 
 ### Guided mode and readable presentation

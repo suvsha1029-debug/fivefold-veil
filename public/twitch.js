@@ -51,12 +51,13 @@ export class TwitchChat {
   #retries = 0;
   #generation = 0;
 
-  constructor({ onStatus, onMessage, onModeration = null, fetchImpl = globalThis.fetch.bind(globalThis), WebSocketImpl = globalThis.WebSocket }) {
+  constructor({ onStatus, onMessage, onModeration = null, sessionClient = null, fetchImpl = globalThis.fetch.bind(globalThis), WebSocketImpl = globalThis.WebSocket }) {
     this.onStatus = onStatus;
     this.onMessage = onMessage;
     this.onModeration = onModeration;
     this.fetch = fetchImpl;
     this.Socket = WebSocketImpl;
+    this.sessionClient = sessionClient;
   }
 
   async connect(token, clientId) {
@@ -81,7 +82,8 @@ export class TwitchChat {
   }
 
   async #validate() {
-    const res = await this.fetch('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: 'OAuth ' + this.#token } });
+    const res = this.sessionClient ? await this.sessionClient.response('validate') : await this.fetch('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: 'OAuth ' + this.#token } });
+    if (res.status >= 500) throw new Error('Twitch is temporarily unavailable. Retry the saved connection in a moment.');
     if (!res.ok) throw new Error('Twitch sign-in expired. Please connect again.');
     const user = await res.json();
     if (user.client_id !== this.#clientId || !user.user_id || !user.scopes?.includes('user:read:chat')) throw new Error('Twitch did not grant the expected chat permission. Please reconnect with your broadcaster account.');
@@ -107,13 +109,13 @@ export class TwitchChat {
         this.#socket = socket;
         this.#keepalive = session.keepalive_timeout_seconds || 30;
         try {
-          const subscription = transferred ? Promise.resolve() : this.#subscribe(session.id);
+          const subscription = transferred ? Promise.resolve() : this.#subscribe(session.id, generation);
           const [, info] = await Promise.all([subscription, this.#readChannelInfo()]);
           if (this.#stopped || generation !== this.#generation) return;
           this.#retries = 0;
           this.onStatus({ state: 'connected', channel: this.#user.login, info, message: `Connected to @${this.#user.login}` });
           if (old && old !== socket) old.close();
-        } catch (error) { this.#fail(error.message); }
+        } catch (error) { if (!this.#stopped && generation === this.#generation) this.#fail(error.message); }
       } else if (type === 'session_reconnect') {
         try {
           const reconnect = new URL(data.payload.session.reconnect_url);
@@ -156,7 +158,7 @@ export class TwitchChat {
   async #readChannelInfo() {
     try {
       const id = this.#user.user_id;
-      const response = await this.fetch('https://api.twitch.tv/helix/channels?broadcaster_id='+encodeURIComponent(id), {
+      const response = this.sessionClient ? await this.sessionClient.response('channel') : await this.fetch('https://api.twitch.tv/helix/channels?broadcaster_id='+encodeURIComponent(id), {
         headers: {Authorization: 'Bearer '+this.#token, 'Client-Id': this.#clientId},
         signal: AbortSignal.timeout(3500),
       });
@@ -167,10 +169,11 @@ export class TwitchChat {
     } catch { return null; }
   }
 
-  async #subscribe(sessionId) {
+  async #subscribe(sessionId, generation) {
     const types=['channel.chat.message',...(this.onModeration?['channel.chat.message_delete','channel.chat.clear_user_messages','channel.chat.clear']:[])];
     for(const type of types){
-    const res = await this.fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
+    if (this.#stopped || generation !== this.#generation) return;
+    const res = this.sessionClient ? await this.sessionClient.response('subscribe', {type,sessionId}) : await this.fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + this.#token, 'Client-Id': this.#clientId, 'Content-Type': 'application/json' },
       body: JSON.stringify({ type, version: '1', condition: { broadcaster_user_id: this.#user.user_id, user_id: this.#user.user_id }, transport: { method: 'websocket', session_id: sessionId } }),

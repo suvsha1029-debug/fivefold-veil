@@ -113,3 +113,91 @@ test('a failed channel metadata lookup still connects chat',async()=>{
     assert.equal(f.statuses.at(-1).info,null);
   }finally{f.chat.disconnect(false);}
 });
+
+test('saved-session mode validates, reads metadata, and subscribes through the server without browser token requests', async () => {
+  MockSocket.sockets = [];
+  const requests = [], statuses = [], messages = [], events = [];
+  let externalRequests = 0;
+  const chat = new TwitchChat({
+    WebSocketImpl: MockSocket,
+    onStatus: status => statuses.push(status),
+    onMessage: message => messages.push(message),
+    onModeration: event => events.push(event),
+    fetchImpl: async () => { externalRequests++; throw new Error('Browser must not call Twitch HTTP APIs in saved-session mode'); },
+    sessionClient: { response: async (action, body) => {
+      requests.push({ action, body });
+      if (action === 'validate') return Response.json({ user_id: '123', login: 'ourchannel', client_id: 'public-client', scopes: ['user:read:chat'] });
+      if (action === 'channel') return Response.json({ data: [{ broadcaster_id: '123', game_name: 'Chess', title: 'Final match' }] });
+      if (action === 'subscribe') return Response.json({ subscribed: true }, { status: 202 });
+      throw new Error('Unexpected session action: ' + action);
+    } },
+  });
+  try {
+    await chat.connect(null, 'public-client');
+    assert.equal(MockSocket.sockets.length, 1);
+    assert.equal(MockSocket.sockets[0].url, 'wss://eventsub.wss.twitch.tv/ws?keepalive_timeout_seconds=30');
+    await MockSocket.sockets[0].receive(welcome('saved-session-socket'));
+    assert.equal(statuses.at(-1).state, 'connected');
+    assert.deepEqual(statuses.at(-1).info, { category: 'Chess', title: 'Final match' });
+    assert.equal(requests[0].action, 'validate');
+    assert.ok(requests.some(request => request.action === 'channel'));
+    assert.deepEqual(requests.filter(request => request.action === 'subscribe').map(request => request.body), [
+      { type: 'channel.chat.message', sessionId: 'saved-session-socket' },
+      { type: 'channel.chat.message_delete', sessionId: 'saved-session-socket' },
+      { type: 'channel.chat.clear_user_messages', sessionId: 'saved-session-socket' },
+      { type: 'channel.chat.clear', sessionId: 'saved-session-socket' },
+    ]);
+    await MockSocket.sockets[0].receive(notification('saved-session-message'));
+    assert.equal(messages.length, 1);
+    assert.equal(externalRequests, 0);
+    assert.ok(!JSON.stringify(requests).includes('access_token'));
+  } finally { chat.disconnect(false); }
+});
+
+test('a late subscription rejection from an old connection cannot stop its replacement', async () => {
+  MockSocket.sockets = [];
+  const statuses = [], messages = [], subscriptions = [];
+  let rejectOldSubscription;
+  const oldSubscription = new Promise((resolve, reject) => { rejectOldSubscription = reject; });
+  const chat = new TwitchChat({
+    WebSocketImpl: MockSocket,
+    onStatus: status => statuses.push(status),
+    onMessage: message => messages.push(message),
+    onModeration: () => {},
+    sessionClient: { response: async (action, body) => {
+      if (action === 'validate') return Response.json({ user_id: '123', login: 'ourchannel', client_id: 'public-client', scopes: ['user:read:chat'] });
+      if (action === 'channel') return Response.json({ data: [{ broadcaster_id: '123', game_name: 'Chess', title: 'Final match' }] });
+      if (action === 'subscribe') {
+        subscriptions.push(body);
+        if (body.sessionId === 'old-session') return oldSubscription;
+        return Response.json({ subscribed: true }, { status: 202 });
+      }
+      throw new Error('Unexpected session action: ' + action);
+    } },
+  });
+  try {
+    await chat.connect(null, 'public-client');
+    const oldSocket = MockSocket.sockets[0];
+    const oldWelcome = oldSocket.receive(welcome('old-session'));
+    assert.equal(subscriptions.length, 1);
+    chat.disconnect(false);
+    await chat.connect(null, 'public-client');
+    const replacement = MockSocket.sockets[1];
+    await replacement.receive(welcome('new-session'));
+    assert.equal(statuses.at(-1).state, 'connected');
+    const statusCount = statuses.length;
+
+    rejectOldSubscription(new Error('Old request failed after the new connection started'));
+    await oldWelcome;
+
+    assert.equal(statuses.length, statusCount);
+    assert.equal(statuses.at(-1).state, 'connected');
+    assert.equal(statuses.some(status => status.state === 'error'), false);
+    assert.equal(oldSocket.closed, true);
+    assert.equal(replacement.closed, false);
+    assert.equal(subscriptions.filter(body => body.sessionId === 'old-session').length, 1);
+    assert.equal(subscriptions.filter(body => body.sessionId === 'new-session').length, 4);
+    await replacement.receive(notification('new-session-message'));
+    assert.equal(messages.length, 1);
+  } finally { chat.disconnect(false); }
+});

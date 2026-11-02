@@ -40,3 +40,10 @@
 #quick-status{font-size:12px;color:var(--ink)}
 .audience-mode .quick-controls{display:none}
 @media(max-width:680px){.quick-controls>div{width:100%}.quick-controls button{flex:1}.quick-controls p{min-width:0}}
+
+/* Connection messages remain readable in every domain, without motion or colour-only cues. */
+.twitch-live-status{margin:0 0 1rem;padding:.8rem 1rem;border:1px solid #8d969b;background:#161a1e;color:#e5eaed;font-size:.9rem;line-height:1.55;overflow-wrap:anywhere}
+.twitch-live-status[data-state="connected"]{border-inline-start:3px solid #a9c6b7}
+.twitch-live-status[data-state="error"]{border-inline-start:3px solid #dbb88d}
+#room-twitch-dialog>#room-twitch-retry,#room-twitch-dialog>#room-twitch-disconnect{margin-top:.75rem}
+#room-twitch-status{min-height:1.5em;color:var(--text,#e5eaed)}

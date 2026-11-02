@@ -72,7 +72,7 @@ export function guideSteps(state) {
 
   if(role==='host') return [
     step('invite','#quick-invite','1. Invite your viewers','Copy viewer invite copies a room link for your crew. Share that viewer link; keep your private host key to yourself.'),
-    step('twitch','#room-twitch-button','2. Connect Twitch · optional','Connect your channel if you want Twitch chat commands to reach the room. Browser viewers can play without this connection; reconnect Twitch after refreshing the host tab.'),
+    step('twitch','#room-twitch-button','2. Connect Twitch · optional','Connect your broadcaster account once to receive Twitch chat commands. This browser restores a valid saved sign-in after refresh. Browser viewers can play without connecting Twitch.'),
     step('clock','#host-start','3. Start when your crew is ready',paused?'Begin or resume the encounter when everyone is ready. The guide does not start it or spend an experiment.':'The encounter is running. Hold the clock pauses it if you want more time to read; the guide does not pause it automatically.'),
     step('control','#host-desk','Choose how much control to share',mode==='host'?'In Host-led mode, review and approve viewer experiment requests here. Change participation modes only while the clock is held; the puzzle editor is available before a round starts.':mode==='community'?'Viewers lead lets evidence contributors confirm leading votes. You can change participation modes while the clock is held; puzzle editing is available before a round starts.':'Shared control lets viewers experiment and vote while you confirm answers. Change participation modes while the clock is held; puzzle editing is available before a round starts.'),
     step('eyes','#discovery-trail','Investigate all five eyes','Select an eye to inspect its theories and evidence. Everyone may help at any eye, even if it is not their team’s home eye.'),
@@ -129,10 +129,10 @@ export function guideDialogSteps(dialogId,state) {
         step('twitch-close','[data-close="room-twitch-dialog"]','Return to the expedition','Close this window to keep watching or using your browser seat. This guide will not authorize an account for you.'),
       ];
       return [
-        step('twitch-callback','#room-callback','Register this exact return address','In your Twitch app registration, use the exact redirect URL displayed here. The current adapter uses a Confidential Twitch app with browser sign-in.'),
-        step('twitch-client','#room-client-id','Enter the public Client ID','Copy your Twitch app’s Client ID into this field. A Client ID is public; do not enter a client secret or access token here.'),
-        step('twitch-authorize','#room-twitch-form button[type="submit"]','Authorize only when you are ready','Authorize Twitch opens Twitch’s sign-in and permission flow. Read and approve it yourself if you want the connection; Next only explains this button.'),
-        step('twitch-disconnect','#room-twitch-disconnect','Manage an existing connection','Disconnect Twitch ends the chat connection for this browser while browser participants can continue. Access tokens stay in memory, so refreshing requires reconnecting.'),
+        step('twitch-saved','#twitch-connect-help','Connect once on this browser','The server keeps Twitch credentials encrypted; you do not enter a client secret or access token here. A valid saved sign-in restores automatically after refresh for up to seven days.'),
+        step('twitch-authorize','#room-twitch-form button[type="submit"]','Authorize only when you are ready','Connect securely with Twitch opens Twitch’s sign-in and permission flow. Read and approve it yourself if you want the connection; Next only explains this button.'),
+        step('twitch-status','#room-twitch-status','Check your connection','This status explains whether chat is connected, restoring, or needs attention. Retry saved connection checks an existing sign-in without asking you to paste credentials.'),
+        step('twitch-disconnect','#room-twitch-disconnect','Forget this browser when finished','Disconnect stops chat and removes this browser’s saved Twitch sign-in. Use it on a shared computer. Browser teams and host controls continue independently.'),
       ];
     }
     case 'invite-dialog': return [

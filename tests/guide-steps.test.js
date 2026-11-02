@@ -78,15 +78,16 @@ test('dialog guides preserve read-only spectator and before-round host boundarie
   assert.ok(editing.some(s=>s.target==='#publish-puzzle'));
 });
 
-test('Twitch guide separates public ID entry from deliberate authorization',()=>{
+test('Twitch guide explains saved login separately from deliberate authorization',()=>{
   const unauthorized=guideDialogSteps('room-twitch-dialog',state());
   assert.ok(!unauthorized.some(s=>s.target==='#room-client-id'));
   const captain=guideDialogSteps('room-twitch-dialog',state({canRelay:true}));
-  const id=captain.find(s=>s.id==='twitch-client'),authorize=captain.find(s=>s.id==='twitch-authorize');
-  assert.match(id.text,/Client ID is public/);
-  assert.match(id.text,/do not enter a client secret or access token/);
+  const saved=captain.find(s=>s.id==='twitch-saved'),authorize=captain.find(s=>s.id==='twitch-authorize');
+  assert.match(saved.text,/credentials encrypted/);
+  assert.match(saved.text,/do not enter a client secret or access token/);
   assert.match(authorize.text,/approve it yourself/);
-  assert.notEqual(id.target,authorize.target);
+  assert.notEqual(saved.target,authorize.target);
+  assert.match(captain.find(s=>s.id==='twitch-disconnect').text,/removes this browser/);
 });
 
 test('all dialog guide copy is bounded, stable, private-data independent and read-only',()=>{

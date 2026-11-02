@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
 import { resolve, sep, extname } from 'node:path';
 import { RoomApi } from './server/rooms.js';
+import { TwitchSessionApi } from './server/twitch-session.js';
 
 const root = fileURLToPath(new URL('./public/', import.meta.url));
 const dataDir = new URL('./.openai/local/rehearsal/', import.meta.url);
@@ -15,7 +16,7 @@ const findRoom = db.prepare('SELECT data, version FROM room_documents WHERE code
 const createRoom = db.prepare('INSERT OR IGNORE INTO room_documents VALUES (?, ?, 0, ?)');
 const updateRoom = db.prepare('UPDATE room_documents SET data=?, version=version+1, expires_at=? WHERE code=? AND version=?');
 const deleteExpired = db.prepare('DELETE FROM room_documents WHERE expires_at < ?');
-const roomApi = new RoomApi({
+const documentStore = {
   get(code) {
     const row = findRoom.get(code);
     return row ? {data: JSON.parse(row.data), version: row.version} : null;
@@ -27,17 +28,21 @@ const roomApi = new RoomApi({
     return updateRoom.run(JSON.stringify(room), room.expiresAt, code, version).changes === 1;
   },
   cleanup(now) { deleteExpired.run(now); },
-});
+};
+const roomApi = new RoomApi(documentStore);
 const port = Number(process.env.PORT || 4173);
+const twitchApi = new TwitchSessionApi(documentStore, {env:process.env,origin:`http://localhost:${port}`});
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png':'image/png', '.jpg':'image/jpeg', '.webp':'image/webp' };
 
 createServer(async (req, res) => {
   const headers = { 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store' };
-  if(req.url.startsWith('/api/rooms')){
+  if(req.url.startsWith('/api/rooms') || req.url.startsWith('/api/twitch')){
     const limit=/^\/api\/rooms\/[^/]+\/council$/.test(req.url)?70000:4096;
     const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>limit){res.writeHead(413,headers).end('Request too large');return;}chunks.push(chunk);}
-    const response=await roomApi.fetch(new Request(`http://${req.headers.host}${req.url}`,{method:req.method,headers:req.headers,body:['GET','HEAD'].includes(req.method)?undefined:Buffer.concat(chunks)}));
-    res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));return;
+    const service=req.url.startsWith('/api/twitch')?twitchApi:roomApi;
+    const response=await service.fetch(new Request(`http://${req.headers.host}${req.url}`,{method:req.method,headers:req.headers,body:['GET','HEAD'].includes(req.method)?undefined:Buffer.concat(chunks)}));
+    const responseHeaders=Object.fromEntries(response.headers);delete responseHeaders['set-cookie'];
+    res.writeHead(response.status,{...responseHeaders,...(response.headers.getSetCookie().length?{'Set-Cookie':response.headers.getSetCookie()}:{})});res.end(Buffer.from(await response.arrayBuffer()));return;
   }
   if (!['GET', 'HEAD'].includes(req.method)) {
     res.writeHead(405, { ...headers, Allow: 'GET, HEAD' }).end();

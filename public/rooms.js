@@ -10,7 +10,8 @@ import { HostDesk } from './host-desk.js';
 import { WitnessSeat } from './witness-seat.js';
 import { Council } from './council.js';
 import { DomainLounge } from './domain-lounge.js';
-import { channelDescription, TwitchChat, beginTwitchLogin, consumeTwitchLogin, callbackUrl, savedClientId } from './twitch.js';
+import { channelDescription, TwitchChat } from './twitch.js';
+import { TwitchSessionClient, consumeTwitchCode } from './twitch-session-client.js';
 
 const $=id=>document.getElementById(id);
 const node=(tag,cls='',text='')=>{const n=document.createElement(tag);n.className=cls;n.textContent=text;return n;};
@@ -22,7 +23,9 @@ let pendingChamber=null;
 let audienceView=false;
 let hostChoices={};
 let contentKey='';
-let oauth=null;try{oauth=consumeTwitchLogin();}catch(error){setTimeout(()=>toast(error.message,true),0);}
+const twitchSession=new TwitchSessionClient();
+let restoreSerial=0,twitchConfigured=null,twitchAuthBusy=false;
+let oauth=null,oauthReturned=false;try{oauth=consumeTwitchCode();oauthReturned=!!oauth;}catch(error){oauthReturned=true;setTimeout(()=>toast(error.message,true),0);}
 const scene=new DomainScene();
 const keyboard=new EmojiKeyboard($('emoji-keyboard'),{onChange:renderKeyboard,onSubmit:()=>sendSignal()});
 const worlds=new TeamWorlds({scene,getState:()=>state,getEye:()=>selectedEye,isBusy:()=>busy,vote:domain=>action('domain',{domain}),toast});
@@ -80,6 +83,7 @@ function enter(value,next){
   $('room-view').hidden=false;
   $('lobby-button').hidden=false;
   applyState(next);
+  if(next.canRelay&&!oauth)restoreTwitch();
   if(pendingChamber&&value.role!=='spectator'){
     chambers.open(pendingChamber);
     pendingChamber=null;
@@ -113,7 +117,7 @@ async function refresh(){
 for(const emoji of avatars){const button=node('button','avatar-key',emoji);button.type='button';button.setAttribute('aria-label',`Avatar ${emoji}`);button.setAttribute('aria-pressed',String(emoji===avatar));button.addEventListener('click',()=>{avatar=emoji;for(const b of $('avatar-picker').children)b.setAttribute('aria-pressed',String(b===button));});$('avatar-picker').append(button);}
 $('create-form').addEventListener('submit',async event=>{event.preventDefault();const submit=event.submitter;submit.disabled=true;try{const result=await api('',{method:'POST',token:null,body:{title:$('room-title').value,durationMs:Number($('room-duration').value),minimumTeams:Number($('room-minimum-teams').value),controlMode:$('create-control-mode').value}});enter({code:result.state.code,token:result.token,role:'host'},result.state);toast('Room created. Invite your teams; your host key stays in this browser.');}catch(error){toast(error.message,true);}finally{submit.disabled=false;}});
 $('join-form').addEventListener('submit',async event=>{event.preventDefault();const submit=event.submitter;submit.disabled=true;const code=$('join-code').value.trim().toUpperCase();try{const remembered=lookup(code,'member');if(remembered){const next=await api(`/${code}`,{token:remembered.token});if(next.me){enter(remembered,next);toast('Your browser seat has rejoined.');return;}}const result=await api(`/${code}/join`,{method:'POST',token:null,body:{name:$('join-name').value,avatar,team:$('join-team').value}});enter({code,token:result.token,role:'member'},result.state);toast('Welcome to the expedition. Your team ID is on your identity card.');}catch(error){showRoomLoadError(error);}finally{submit.disabled=false;}});
-$('lobby-button').addEventListener('click',()=>{session=null;state=null;lounge.render();audienceView=false;document.body.classList.remove('audience-mode');worlds.teamId=null;worlds.preview=null;worlds.render();scene.setState('paused');$('lobby').hidden=false;$('room-view').hidden=true;$('lobby-button').hidden=true;history.replaceState(null,'',location.pathname);guidedHelp.update();});
+$('lobby-button').addEventListener('click',()=>{restoreSerial++;twitch.disconnect(false);connection={state:'disconnected'};session=null;state=null;lounge.render();audienceView=false;document.body.classList.remove('audience-mode');worlds.teamId=null;worlds.preview=null;worlds.render();scene.setState('paused');$('lobby').hidden=false;$('room-view').hidden=true;$('lobby-button').hidden=true;history.replaceState(null,'',location.pathname);guidedHelp.update();});
 
 function renderTeams(){
   const signature=state.teams.map(t=>`${t.eyeId}:${t.members}:${t.contributors}:${t.sealed}:${t.domain}`).join('|')+selectedEye;
@@ -241,6 +245,7 @@ function render(){
   renderTeams();renderKeyboard();renderTheories();renderProof();renderGuidance();hostDesk.render();witness.render();council.render();lounge.render();
   guidedHelp.update();
   $('room-twitch-button').hidden=!state.canRelay;
+  renderTwitchConnection();
   let roster=$('member-roster');if(!roster){roster=node('div','member-roster');roster.id='member-roster';document.querySelector('.crew-identity').append(roster);}const members=state.members.filter(m=>m.team===(me?.team||selectedEye)),rosterKey=JSON.stringify([state.code,members]);if(roster.dataset.signature!==rosterKey){roster.dataset.signature=rosterKey;roster.replaceChildren(node('span','','TEAM ROSTER'),...members.slice(0,8).map(m=>{const item=node('p','',`${m.avatar} ${m.name}`);item.append(node('small','',m.id));return item;}));if(!members.length)roster.append(node('p','','No one has joined this team yet.'));}
   $('journal-count').textContent=`${g.experiments.length}/30 EXPERIMENTS`;$('room-journal-empty').hidden=!!g.experiments.length;$('room-journal-table').hidden=!g.experiments.length;
   const journalKey=JSON.stringify([state.code,state.round,g.experiments]);if($('room-evidence').dataset.signature!==journalKey){$('room-evidence').dataset.signature=journalKey;$('room-evidence').replaceChildren(...g.experiments.slice().reverse().map(e=>{const row=node('tr');row.append(node('td','',`${e.sequence} / ${e.eyeId}`),node('td','',signalEmoji(e)),node('td','',e.name),node('td',`result-tag${e.accepted?'':' fail'}`,e.accepted?'✓ PASS':'× FAIL'));return row;}));}
@@ -254,7 +259,7 @@ for(const button of document.querySelectorAll('[data-close]'))button.addEventLis
 $('invite-button').addEventListener('click',()=>{$('invite-url').value=joinUrl(state.code);$('invite-dialog').showModal();});
 $('copy-invite').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('invite-url').value);toast('Viewer link copied. It contains no host credentials.');}catch{$('invite-url').select();toast('Select and copy the viewer link above.');}});
 
-const twitch=new TwitchChat({onMessage:message=>{
+const twitch=new TwitchChat({sessionClient:twitchSession,onMessage:message=>{
   if(!session||!state?.canRelay||(!state.isHost&&/^!spotlight\s/i.test(message.text))||!(/^!(team|domain|tune|test|solve|cite|bind|focus|hint|seal|spotlight|back|opinion|memevote)\s/i.test(message.text)||/^!confirmbind$/i.test(message.text.trim())))return;
   const seat=session;api(`/${seat.code}/twitch`,{method:'POST',token:seat.token,body:{text:message.text,userId:message.id,name:message.name,messageId:message.messageId,sentAt:message.sentAt,channel:connection.channel,requestId:requestId()}}).then(response=>{if(session!==seat)return;applyState(response.state);if(response.result?.kind==='test')scene.pulse(response.result.experiment.accepted);}).catch(error=>{if(session===seat)toast(error.message,true);});
 },onModeration:event=>{
@@ -263,15 +268,43 @@ const twitch=new TwitchChat({onMessage:message=>{
   if(!state.isHost)return;
   api(`/${seat.code}/witness-moderation`,{method:'POST',token:seat.token,body:{...event,requestId:requestId()}}).then(response=>{if(session===seat)applyState(response.state);}).catch(()=>{if(session!==seat)return;toast('Chat moderation could not sync. Turning off spotlights; reconnect before using them.',true);action('witness',{type:'enable',enabled:false});});
 },onStatus:next=>{
-  connection=next;$('room-twitch-status').textContent=next.message||next.state;$('room-twitch-form').hidden=next.state==='connected';$('room-twitch-disconnect').hidden=next.state!=='connected';
+  connection=next;renderTwitchConnection();
   if(next.state==='connected'){const seat=session;toast(`Twitch connected: @${next.channel}. Council commands: !back crown 1, !opinion a your reason, !memevote m1.`);if(session&&state?.canRelay)api(`/${session.code}/council`,{method:'POST',body:{type:'connect',channel:next.channel,info:next.info,requestId:requestId()}}).then(response=>{if(session===seat)applyState(response.state);}).catch(error=>{if(session===seat)toast(error.message,true);});if($('room-twitch-dialog').open)$('room-twitch-dialog').close();}
   if(['error','reconnecting'].includes(next.state)&&state?.game.status==='running'&&state?.isHost)action('control',{type:'pause'});
   if(state)render();
 }});
-$('room-callback').textContent=callbackUrl();$('room-client-id').value=savedClientId();
+function renderTwitchConnection(){
+  const working=['restoring','connecting','reconnecting'].includes(connection.state);
+  const connected=connection.state==='connected';
+  const message=connection.message||(connected?`Connected to @${connection.channel}`:'Twitch is optional. Connect your channel to receive chat commands.');
+  $('room-twitch-status').textContent=message;
+  $('room-twitch-status').setAttribute('aria-busy',String(working));
+  $('room-twitch-live').hidden=!state?.canRelay;
+  $('room-twitch-live').textContent=connected?`Twitch chat connected · @${connection.channel} · saved sign-in`:`Twitch chat · ${message}`;
+  $('room-twitch-live').dataset.state=connection.state;
+  $('room-twitch-button').textContent=connected?`Twitch: @${connection.channel}`:working?'Twitch: connecting…':connection.state==='error'?'Reconnect Twitch':'Connect Twitch';
+  $('room-twitch-form').hidden=connected||working||twitchConfigured===false;
+  $('room-twitch-form').querySelector('button').disabled=twitchAuthBusy;
+  $('room-twitch-retry').hidden=connected||working||twitchConfigured===false;
+  $('room-twitch-disconnect').hidden=!connected&&connection.state!=='error';
+}
+async function restoreTwitch(){
+  if(!session||!state?.canRelay)return;
+  const serial=++restoreSerial,seat=session;
+  twitch.disconnect(false);connection={state:'restoring',message:'Restoring saved Twitch sign-in…'};renderTwitchConnection();
+  try{
+    const saved=await twitchSession.request('status');
+    if(serial!==restoreSerial||session!==seat)return;
+    twitchConfigured=saved.configured;
+    if(!saved.configured){connection={state:'disconnected',message:'Saved Twitch sign-in is not configured yet. Browser teams can still play.'};renderTwitchConnection();return;}
+    if(!saved.connected){connection={state:'disconnected',message:'Connect your Twitch channel once. This browser can restore it after a refresh.'};renderTwitchConnection();return;}
+    await twitch.connect(null,saved.clientId);
+  }catch(error){if(serial===restoreSerial&&session===seat){connection={state:'error',message:error.message};renderTwitchConnection();}}
+}
 $('room-twitch-button').addEventListener('click',()=>$('room-twitch-dialog').showModal());
-$('room-twitch-form').addEventListener('submit',event=>{event.preventDefault();try{remember(session);sessionStorage.setItem('fivefold-twitch-return',JSON.stringify({code:session.code,role:session.role}));beginTwitchLogin($('room-client-id').value);}catch(error){toast(error.message,true);}});
-$('room-twitch-disconnect').addEventListener('click',()=>{twitch.disconnect(false);connection={state:'disconnected'};$('room-twitch-form').hidden=false;$('room-twitch-disconnect').hidden=true;$('room-twitch-status').textContent='Disconnected. Browser teams can continue.';render();});
+$('room-twitch-retry').addEventListener('click',restoreTwitch);
+$('room-twitch-form').addEventListener('submit',async event=>{event.preventDefault();if(twitchAuthBusy||!session||!state?.canRelay)return;const seat=session;twitchAuthBusy=true;renderTwitchConnection();try{remember(seat);sessionStorage.setItem('fivefold-twitch-return',JSON.stringify({code:seat.code,role:seat.role}));const url=await twitchSession.start();if(session===seat)location.assign(url);}catch(error){toast(error.message,true);}finally{twitchAuthBusy=false;renderTwitchConnection();}});
+$('room-twitch-disconnect').addEventListener('click',async()=>{++restoreSerial;twitch.disconnect(false);const button=$('room-twitch-disconnect');button.disabled=true;try{await twitchSession.request('disconnect',{});connection={state:'disconnected',message:'Disconnected and saved sign-in removed. Browser teams can continue.'};}catch{connection={state:'error',message:'Chat stopped, but saved sign-in could not be removed. Retry Disconnect when online.'};}finally{button.disabled=false;renderTwitchConnection();if(state)render();}});
 
 setInterval(()=>{if(!document.hidden)refresh();},3000);setInterval(()=>{if(!document.hidden)renderClock();},250);
 document.addEventListener('visibilitychange',()=>{chambers.render();if(!document.hidden)refresh();});
@@ -280,9 +313,9 @@ async function initialize(){
   const query=new URL(location.href).searchParams;let code=(query.get('room')||'').toUpperCase(),role=query.get('view')==='host'?'host':'member';
   if(ids.includes(query.get('team')))$('join-team').value=query.get('team');
   if(query.get('chamber')==='1'&&validDomain(query.get('domain')))pendingChamber=query.get('domain');
-  if(oauth&&!code){let back;try{back=JSON.parse(sessionStorage.getItem('fivefold-twitch-return')||'null');}catch{}code=back?.code||readStore(localStorage,HOST_KEY).last||'';role=back?.role||'host';sessionStorage.removeItem('fivefold-twitch-return');}
+  if(oauthReturned&&!code){let back;try{back=JSON.parse(sessionStorage.getItem('fivefold-twitch-return')||'null');}catch{}code=back?.code||readStore(localStorage,HOST_KEY).last||'';role=back?.role||'host';sessionStorage.removeItem('fivefold-twitch-return');}
   if(code){$('join-code').value=code;document.body.classList.add('invited-view');if(query.get('view')==='watch'){try{enter({code,role:'spectator',token:null},await api(`/${code}`,{token:null}));}catch(error){showRoomLoadError(error);}return;}const saved=lookup(code,role);if(saved){try{const next=await api(`/${code}`,{token:saved.token});if((role==='host'&&next.isHost)||(role==='member'&&next.me))enter(saved,next);}catch(error){showRoomLoadError(error);}}}
-  if(oauth){if(state?.canRelay){twitch.connect(oauth.token,oauth.clientId);oauth=null;}else{toast('Open your saved host or captain seat before reconnecting Twitch.',true);oauth=null;}}
+  if(oauth){const code=oauth;oauth=null;if(state?.canRelay){const seat=session;connection={state:'restoring',message:'Completing secure Twitch sign-in…'};renderTwitchConnection();try{await twitchSession.request('exchange',code);if(session===seat)await restoreTwitch();}catch(error){if(session===seat){connection={state:'error',message:error.message};renderTwitchConnection();}}}else{toast('Open your saved host or captain seat before reconnecting Twitch.',true);}}
 }
 initialize();
 
